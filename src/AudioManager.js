@@ -9,24 +9,24 @@ export class AudioManager {
         this.config = {
             default: {
                 non_game: ['Front_end_contents/video_animation_sound.mp3'],
-                arena: ['assets/sound/theme_and_arena/arena_1_lunar.mp3']
+                arena: ['Assets/sound/theme_and_arena/arena_1_lunar.mp3']
             },
             indian: {
-                non_game: ['assets/arena_theme/indian/non_game_music.mp3'],
+                non_game: ['Assets/arena_theme/indian/non_game_music.mp3'],
                 arena: [
-                    'assets/arena_theme/indian/Indian_arena_sound/Indian_arena_sound_1.mp3',
-                    'assets/arena_theme/indian/Indian_arena_sound/Indian_arena_sound_2.mp3'
+                    'Assets/arena_theme/indian/Indian_arena_sound/Indian_arena_sound_1.mp3',
+                    'Assets/arena_theme/indian/Indian_arena_sound/Indian_arena_sound_2.mp3'
                 ]
             },
             chinese: {
                 non_game: [
-                    'assets/arena_theme/chineese/non_game_music_1.mp3',
-                    'assets/arena_theme/chineese/non_game_music_2.mp3'
+                    'Assets/arena_theme/chineese/non_game_music_1.mp3',
+                    'Assets/arena_theme/chineese/non_game_music_2.mp3'
                 ],
                 arena: [
-                    'assets/arena_theme/chineese/chineese_arena_music/chineese_arena_music_1.mp3',
-                    'assets/arena_theme/chineese/chineese_arena_music/chineese_arena_music_2.mp3',
-                    'assets/arena_theme/chineese/chineese_arena_music/chineese_arena_music_3.mp3'
+                    'Assets/arena_theme/chineese/chineese_arena_music/chineese_arena_music_1.mp3',
+                    'Assets/arena_theme/chineese/chineese_arena_music/chineese_arena_music_2.mp3',
+                    'Assets/arena_theme/chineese/chineese_arena_music/chineese_arena_music_3.mp3'
                 ]
             }
         };

@@ -218,7 +218,7 @@ export class Game {
         // Optimization: Do NOT preload videos as Blobs (this caused the lag on web).
         // We will let the browser stream them naturally. 
         // Only preload models and UI audio as blobs for instant response.
-        const allUrls = [audioUrl, arena2Url, ...previewModelUrls];
+        const allUrls = [audioUrl, ...previewModelUrls];
         const initialUi = document.getElementById('initial-loading-ui');
         const barFill = document.getElementById('initial-bar-fill');
         const barPct = document.getElementById('initial-bar-percent');
@@ -813,8 +813,9 @@ export class Game {
         this._bufferVideo = video2;
 
         if (menuBg) {
-            menuBg.src = this._preloadedBlobURLs['arena_2_video.mp4'] || 'Assets/background/arena_2_video.mp4';
-            menuBg.load(); // Start buffering hidden
+            // Use direct path for menu background to enable browser streaming (zero lag)
+            menuBg.src = 'Assets/background/arena_2_video.mp4';
+            menuBg.load(); 
         }
 
         // Spawn particles
