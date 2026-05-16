@@ -151,6 +151,8 @@ export class Game {
         this.fightStarted = false; // New flag
         this._assetsFullyLoaded = false;
         this._loadingClips = ['1.mp4','2.mp4','3.mp4','4.mp4','5.mp4','6.mp4','7.mp4','8.mp4','9.mp4','10.mp4','11.mp4','12.mp4','13.mp4'];
+
+
         this._loadingTips = [
             'Every legend begins with a single step.',
             'The world holds secrets older than memory.',
@@ -213,7 +215,10 @@ export class Game {
             'hero_card/ryoumen_animation.glb'
         ];
         
-        const allUrls = [...videoUrls, audioUrl, arena2Url, ...previewModelUrls];
+        // Optimization: Do NOT preload videos as Blobs (this caused the lag on web).
+        // We will let the browser stream them naturally. 
+        // Only preload models and UI audio as blobs for instant response.
+        const allUrls = [audioUrl, arena2Url, ...previewModelUrls];
         const initialUi = document.getElementById('initial-loading-ui');
         const barFill = document.getElementById('initial-bar-fill');
         const barPct = document.getElementById('initial-bar-percent');
@@ -891,13 +896,15 @@ export class Game {
                 // 30 seconds have passed. Are assets loaded?
                 if (!this._assetsFullyLoaded) {
                     const fallbackText = document.getElementById('fallback-text');
-                    if (fallbackText) fallbackText.style.display = 'block';
-                    
-                    // Keep updating real progress text based on the actual loading manager
-                    const realProgress = Math.floor(this._assetsRealProgress * 100);
-                    if (fill) fill.style.width = realProgress + '%';
-                    if (text) text.innerText = realProgress + '%';
-                    
+                    if (fallbackText) {
+                        const realPct = Math.floor(this._assetsRealProgress * 100);
+                        fallbackText.style.display = 'block';
+                        fallbackText.innerHTML = `YOUR INTERNET IS SLOW: STILL DOWNLOADING ${realPct}% ...`;
+                        
+                        // Update bar and text with real data
+                        if (fill) fill.style.width = realPct + '%';
+                        if (text) text.innerText = realPct + '%';
+                    }
                     requestAnimationFrame(updateSim);
                 } else {
                     this._stopLoadingScreen();
@@ -913,10 +920,9 @@ export class Game {
             if (!this._loadingScreenActive) return;
             
             const nextClip = this._loadingClips[this._currentClipIdx];
-            const nextBlobURL = this._preloadedBlobURLs[nextClip];
+            // Use direct path instead of blob URL for videos to enable browser streaming (zero lag)
+            this._bufferVideo.src = 'Front_end_contents/' + nextClip;
 
-            // Load next clip into buffer
-            this._bufferVideo.src = nextBlobURL || ('Front_end_contents/' + nextClip);
             
             this._bufferVideo.play().then(() => {
                 // Cross-fade
@@ -1061,12 +1067,12 @@ export class Game {
         let yOffset = 0;
         let zoom = 1.0;
         if (this.activeTheme === 'indian') {
-            const images = ['assets/arena_theme/indian/indian_arena_1.jpg', 'assets/arena_theme/indian/indian_arena_2.jpg'];
+            const images = ['Assets/arena_theme/indian/indian_arena_1.jpg', 'Assets/arena_theme/indian/indian_arena_2.jpg'];
             arenaImage = images[Math.floor(Math.random() * images.length)];
-            yOffset = 3.5; // Lift floor significantly for Indian theme alignment
-            zoom = 1.3;    // Zoom out to show more landscape and Shiva's face
+            yOffset = 3.5; 
+            zoom = 1.3;    
         } else if (this.activeTheme === 'chinese') {
-            const images = ['assets/arena_theme/chineese/chineese_arena_1.jpg', 'assets/arena_theme/chineese/chineese_arena_2.jpg'];
+            const images = ['Assets/arena_theme/chineese/chineese_arena_1.jpg', 'Assets/arena_theme/chineese/chineese_arena_2.jpg'];
             arenaImage = images[Math.floor(Math.random() * images.length)];
             yOffset = 1.2; 
             zoom = 1.1;
