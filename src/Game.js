@@ -1199,6 +1199,10 @@ export class Game {
     _loop() {
         requestAnimationFrame(() => this._loop());
         
+        // PERFORMANCE BOOST: If we are in the menus, don't waste CPU/GPU rendering the 3D scene.
+        // This fixes the laggy background video.
+        if (this.currentPhase < 4) return; 
+
         const dt = Math.min(this.clock.getDelta(), 0.033); // cap at ~30 fps equivalent
 
         if (this.gameLoaded) {
