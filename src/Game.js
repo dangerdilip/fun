@@ -367,13 +367,13 @@ export class Game {
     _selectTheme(theme) {
         this.activeTheme = theme;
         this.audioManager.setTheme(theme);
+        this.audioManager.playMenuMusic(); // Start IMMEDIATELY on click to satisfy browser security
         
         const themeUi = document.getElementById('theme-selection-ui');
         if (themeUi) {
             themeUi.style.opacity = '0';
             setTimeout(() => {
                 themeUi.style.display = 'none';
-                this.audioManager.playMenuMusic();
                 this._showModeSelectionPhase3();
             }, 800);
         }
