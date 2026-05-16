@@ -1,0 +1,2330 @@
+================================================================================
+        FRACTURE — CORE ENGINE & GAME LOGIC DOCUMENT v1.0
+        Technical Implementation Blueprint | All Systems Explained
+================================================================================
+        Engine      : Three.js (browser-based, no install)
+        Physics     : Rapier.js (WebAssembly, browser-native)
+        Multiplayer : Partykit.io (WebSocket, free tier)
+        Language    : Vanilla JavaScript + HTML5 + CSS3
+        Target FPS  : 60 FPS stable on mid/low-end laptops
+================================================================================
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 1 — PROJECT FILE STRUCTURE
+════════════════════════════════════════════════════════════════════════════════
+
+fracture/
+│
+├── index.html                  ← Entry point. Loads everything.
+│
+├── css/
+│   └── style.css               ← Global styles, HUD, menus, fonts
+│
+├── js/
+│   ├── main.js                 ← Boot, scene init, game loop
+│   ├── GameState.js            ← Central state machine (what screen we're on)
+│   ├── InputManager.js         ← All keyboard input handling
+│   ├── CharacterController.js  ← Movement, physics, animation logic
+│   ├── CombatSystem.js         ← Attack, hitbox, damage, blocking
+│   ├── ManaSystem.js           ← Mana fill, spend, display
+│   ├── HealthSystem.js         ← HP tracking, round logic, display
+│   ├── RageArtSystem.js        ← Rage Art trigger, animation, effect
+│   ├── SpecialMoveSystem.js    ← Special move logic per character
+│   ├── AIController.js         ← CPU opponent decision tree
+│   ├── CameraController.js     ← Dynamic camera, cinematic mode
+│   ├── SoundSystem.js          ← All audio loading, playback, mixing
+│   ├── HitboxDebugger.js       ← (Dev only) visualise hitboxes
+│   ├── NetworkManager.js       ← Partykit.io multiplayer connection
+│   └── UIManager.js            ← All screen transitions, HUD updates
+│
+├── characters/
+│   ├── Harshita.js             ← Harshita specific data and moves
+│   ├── HarshitaS.js            ← Harshita·S specific data and moves
+│   ├── Debojeet.js             ← Debojeet specific data and moves
+│   └── RyomenRaj.js            ← Ryomen Raj specific data and moves
+│
+├── models/                     ← All 3D character and arena GLB files
+│   ├── harshita.glb
+│   ├── harshita_s.glb
+│   ├── debojeet.glb
+│   ├── ryomen_raj.glb
+│   ├── arena_temple.glb
+│   └── arena_district.glb
+│
+├── animations/                 ← All animation GLB files (from Mixamo)
+│   ├── idle.glb
+│   ├── walk.glb
+│   ├── run.glb
+│   ├── jump.glb
+│   ├── double_jump.glb
+│   ├── crouch_idle.glb
+│   ├── crouch_walk.glb
+│   ├── dash_forward.glb
+│   ├── dash_backward.glb
+│   ├── punch_light.glb
+│   ├── punch_medium.glb
+│   ├── punch_heavy.glb
+│   ├── combo_string.glb
+│   ├── hit_high.glb
+│   ├── hit_low.glb
+│   ├── knocked_down.glb
+│   ├── get_up.glb
+│   ├── block.glb
+│   ├── victory.glb
+│   └── defeat.glb
+│
+├── sounds/
+│   ├── music/
+│   │   ├── menu_theme.mp3
+│   │   ├── arena_temple.mp3
+│   │   └── arena_district.mp3
+│   ├── harshita/
+│   │   ├── punch_light.mp3
+│   │   ├── punch_heavy.mp3
+│   │   ├── combo.mp3
+│   │   ├── hit_receive.mp3
+│   │   ├── leetcode_swarm.mp3
+│   │   ├── tornado_kick.mp3
+│   │   ├── rage_art.mp3
+│   │   └── victory.mp3
+│   ├── harshita_s/
+│   │   └── [same structure]
+│   ├── debojeet/
+│   │   └── [same structure]
+│   ├── ryomen_raj/
+│   │   ├── [same structure]
+│   │   ├── domain_expansion.mp3
+│   │   └── evil_laugh.mp3
+│   └── ui/
+│       ├── menu_click.mp3
+│       ├── menu_hover.mp3
+│       ├── fight_announce.mp3
+│       ├── ko_announce.mp3
+│       └── timer_warning.mp3
+│
+├── video/
+│   ├── splash_bg.mp4           ← Background video for splash/menu screens
+│   └── arena_preview/
+│       ├── temple_preview.mp4  ← Arena select preview videos (optional)
+│       └── district_preview.mp4
+│
+├── textures/                   ← UI textures, character portraits
+│   ├── harshita_portrait.png
+│   ├── harshita_s_portrait.png
+│   ├── debojeet_portrait.png
+│   ├── ryomen_raj_portrait.png
+│   ├── arena_temple_thumb.png
+│   └── arena_district_thumb.png
+│
+└── fonts/                      ← Google Fonts loaded via CDN (no local files)
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 2 — index.html STRUCTURE
+════════════════════════════════════════════════════════════════════════════════
+
+The index.html is the single entry point. Everything runs through it.
+It contains all screen layers stacked on top of each other.
+Only the active screen is visible at any time (others display:none).
+
+LAYER STACK (bottom to top, all position:fixed, full screen):
+    Layer 0 — Three.js Canvas         (the 3D game world)
+    Layer 1 — Background Video        (for menu/splash screens only)
+    Layer 2 — Screen UI Panels        (menus, character select, etc.)
+    Layer 3 — In-Game HUD             (health bars, mana, timer, round)
+    Layer 4 — Cinematic Overlay       (dims UI during specials)
+    Layer 5 — Screen Transition       (fade in/out between screens)
+
+HTML SCREEN IDs (each is a div, shown/hidden by UIManager.js):
+    #screen-splash          ← Splash / boot screen
+    #screen-main-menu       ← Main menu
+    #screen-lobby           ← Multiplayer lobby
+    #screen-char-select     ← Character selection
+    #screen-arena-select    ← Arena selection
+    #screen-loading         ← Loading screen
+    #screen-hud             ← In-game HUD (overlays canvas)
+    #screen-post-match      ← Winner, rematch options
+    #screen-pause           ← Pause overlay
+    #screen-settings        ← Settings overlay
+
+IMPORTANT: The Three.js canvas (#game-canvas) is always rendering in the
+background. Screens are HTML/CSS layers on top. When in-game, all screens
+except #screen-hud are hidden. The HUD is always transparent background.
+
+EXTERNAL LIBRARIES LOADED VIA CDN IN index.html:
+    Three.js        : https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js
+    GLTFLoader      : https://cdn.jsdelivr.net/npm/three@latest/examples/js/loaders/GLTFLoader.js
+    AnimationMixer  : Included in Three.js core
+    Rapier.js       : https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat/rapier.min.js
+    Google Fonts    : https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani&family=Cinzel+Decorative
+    Partykit        : https://cdn.jsdelivr.net/npm/partysocket/dist/partysocket.min.js
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 3 — BACKGROUND VIDEO SYSTEM
+════════════════════════════════════════════════════════════════════════════════
+
+The background video is used on: Splash Screen, Main Menu, Character Select,
+Arena Select. It is NOT visible during gameplay (canvas takes over).
+
+────────────────────────────────────────────────────────────────────────────────
+3.1 HOW THE VIDEO IS APPLIED (HTML/CSS Method)
+────────────────────────────────────────────────────────────────────────────────
+
+HTML ELEMENT:
+    <video id="bg-video" autoplay muted loop playsinline>
+        <source src="video/splash_bg.mp4" type="video/mp4">
+    </video>
+
+CSS STYLING:
+    #bg-video {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;       ← Fills screen without stretching
+        z-index: 0;              ← Behind all UI layers
+        opacity: 0.6;            ← Dimmed so UI text is readable on top
+        filter: brightness(0.5) saturate(1.2);  ← Dark and rich
+    }
+
+OVERLAY ON TOP OF VIDEO:
+    A semi-transparent dark gradient div sits between video and UI:
+    background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.4) 0%,
+        rgba(0,0,0,0.7) 100%
+    );
+    This ensures menu text is always readable regardless of video content.
+
+────────────────────────────────────────────────────────────────────────────────
+3.2 VIDEO SWITCHING BETWEEN SCREENS
+────────────────────────────────────────────────────────────────────────────────
+
+UIManager.js controls when video is visible:
+
+    showVideo()   → sets #bg-video display:block, fades in over 0.5s
+    hideVideo()   → fades out over 0.3s, then display:none
+
+VIDEO IS SHOWN ON   : splash, main-menu, char-select, arena-select, lobby
+VIDEO IS HIDDEN ON  : loading, in-game, post-match
+
+When transitioning from menu to game:
+    1. Fade to black (screen-transition layer opacity 0 → 1, 0.5s)
+    2. Hide video (display:none)
+    3. Show Three.js canvas fully
+    4. Begin loading arena
+    5. Fade from black when arena is ready
+
+────────────────────────────────────────────────────────────────────────────────
+3.3 VIDEO FORMAT REQUIREMENTS
+────────────────────────────────────────────────────────────────────────────────
+
+FORMAT          : MP4 (H.264 codec) — widest browser support
+RESOLUTION      : 1920x1080 recommended (scales down automatically)
+DURATION        : 10-30 seconds, seamless loop point
+FILE SIZE       : Keep under 15MB for fast load. Use HandBrake (free) to
+                  compress: https://handbrake.fr
+CONTENT         : Slow cinematic arena footage, particle effects, atmospheric.
+                  Can be a looping render from Blender or captured in-game later.
+FALLBACK        : If video fails to load, CSS background-color: #0a0a0f
+                  (very dark blue-black) is used instead.
+
+────────────────────────────────────────────────────────────────────────────────
+3.4 ALTERNATIVE — THREE.JS CANVAS AS BACKGROUND (Advanced)
+────────────────────────────────────────────────────────────────────────────────
+
+Instead of a video file, a simple Three.js scene can serve as the
+animated background for menus — a slow rotating arena view with particles.
+This removes the need for any video file.
+
+IMPLEMENTATION:
+    — Load arena GLB at low quality
+    — Camera slowly orbits around centre
+    — Particle system adds floating dust/embers
+    — Menu HTML overlays on top of canvas
+    — Switching to gameplay just changes camera mode and loads characters
+
+This is the recommended approach if your video file is too large or
+if you want a smaller overall project size.
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 4 — GAME STATE MACHINE (GameState.js)
+════════════════════════════════════════════════════════════════════════════════
+
+The GameState is the central brain of the game. Every system checks it
+before doing anything. Only one state is active at any time.
+
+────────────────────────────────────────────────────────────────────────────────
+4.1 ALL GAME STATES
+────────────────────────────────────────────────────────────────────────────────
+
+    STATE_SPLASH            → Showing splash screen, waiting for input
+    STATE_MAIN_MENU         → Main menu displayed
+    STATE_LOBBY             → Multiplayer lobby, waiting for connection
+    STATE_CHAR_SELECT       → Players choosing characters
+    STATE_ARENA_SELECT      → Players choosing arena
+    STATE_LOADING           → Assets loading for match
+    STATE_ROUND_INTRO       → "ROUND 1" text animating in, 2 second delay
+    STATE_FIGHTING          → Active combat, all systems running
+    STATE_ROUND_END         → KO or timeout, winner flash, 2 second hold
+    STATE_MATCH_END         → Match winner decided, victory pose
+    STATE_PAUSE             → Game paused (ESC key)
+    STATE_POST_MATCH        → Rematch / menu options
+    STATE_SETTINGS          → Settings overlay open
+
+────────────────────────────────────────────────────────────────────────────────
+4.2 STATE DATA STRUCTURE
+────────────────────────────────────────────────────────────────────────────────
+
+GameState stores:
+    currentState        : string (one of above)
+    previousState       : string (for returning from pause/settings)
+    matchData : {
+        player1 : {
+            characterId     : "harshita" | "harshita_s" | "debojeet" | "ryomen_raj"
+            roundsWon       : 0
+        }
+        player2 : {
+            characterId     : string
+            roundsWon       : 0
+            isAI            : true | false
+            aiDifficulty    : "easy" | "medium" | "hard"
+        }
+        selectedArena   : "temple" | "district"
+        currentRound    : 1 | 2 | 3
+        maxRounds       : 3
+    }
+    isMultiplayer       : true | false
+    isHost              : true | false (multiplayer only)
+
+────────────────────────────────────────────────────────────────────────────────
+4.3 STATE TRANSITIONS
+────────────────────────────────────────────────────────────────────────────────
+
+    SPLASH          → (any key)         → MAIN_MENU
+    MAIN_MENU       → (single player)   → CHAR_SELECT
+    MAIN_MENU       → (multiplayer)     → LOBBY
+    LOBBY           → (both ready)      → CHAR_SELECT
+    CHAR_SELECT     → (both confirmed)  → ARENA_SELECT
+    ARENA_SELECT    → (confirmed)       → LOADING
+    LOADING         → (assets ready)    → ROUND_INTRO
+    ROUND_INTRO     → (2s delay)        → FIGHTING
+    FIGHTING        → (KO or timeout)   → ROUND_END
+    ROUND_END       → (match not over)  → ROUND_INTRO (next round)
+    ROUND_END       → (match over)      → MATCH_END
+    MATCH_END       → (2s delay)        → POST_MATCH
+    POST_MATCH      → (rematch)         → LOADING (same characters/arena)
+    POST_MATCH      → (menu)            → MAIN_MENU
+    FIGHTING        → (ESC)             → PAUSE
+    PAUSE           → (resume)          → FIGHTING
+    any             → (settings)        → SETTINGS
+    SETTINGS        → (back)            → previousState
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 5 — CHARACTER SYSTEM (CharacterController.js)
+════════════════════════════════════════════════════════════════════════════════
+
+Each character in the game is an instance of CharacterController.
+Two instances exist during a match: player1 and player2.
+
+────────────────────────────────────────────────────────────────────────────────
+5.1 CHARACTER DATA OBJECT (per character file, e.g. Harshita.js)
+────────────────────────────────────────────────────────────────────────────────
+
+Each character file exports a data object:
+
+    const HarshitaData = {
+        id              : "harshita",
+        displayName     : "HARSHITA",
+        subtitle        : "The Iron Will",
+        modelFile       : "models/harshita.glb",
+        portraitFile    : "textures/harshita_portrait.png",
+        scale           : 1.0,          ← Adjust if model is wrong size
+        height          : 1.8,          ← Used for hitbox capsule height
+        radius          : 0.35,         ← Used for hitbox capsule radius
+        hasRageArt      : true,
+        rageArtHpThreshold : 0.30,      ← Activates below 30% HP
+
+        stats : {
+            walkSpeed       : 5.0,      ← m/s
+            dashSpeed       : 12.0,     ← m/s during dash
+            jumpHeight      : 2.5,      ← metres
+            doubleJumpHeight: 1.8,
+            weight          : 1.0,      ← Affects knockback received (1=normal)
+        },
+
+        moves : {
+            lightAttack : {
+                name        : "Light Strike",
+                damage      : 5,
+                manaGain    : 10,
+                startupFrames : 6,      ← Frames before hitbox is active
+                activeFrames  : 4,      ← Frames hitbox is live
+                recoveryFrames: 8,      ← Frames after hit before next action
+                hitboxOffset  : {x:0.5, y:1.2, z:0.3},  ← Relative to character
+                hitboxSize    : {x:0.4, y:0.3, z:0.4},
+                animation     : "punch_light",
+                soundKey      : "punch_light",
+                onHitEffect   : "dust_puff",
+            },
+            mediumAttack : { ... },
+            heavyAttack  : { ... },
+            comboString  : { ... },
+            special      : { ... },
+            specialHalf  : { ... },
+            rageArt      : { ... },
+        },
+
+        sounds : {
+            punchLight  : "sounds/harshita/punch_light.mp3",
+            punchHeavy  : "sounds/harshita/punch_heavy.mp3",
+            combo       : "sounds/harshita/combo.mp3",
+            hitReceive  : "sounds/harshita/hit_receive.mp3",
+            special1    : "sounds/harshita/leetcode_swarm.mp3",
+            special2    : "sounds/harshita/tornado_kick.mp3",
+            rageArt     : "sounds/harshita/rage_art.mp3",
+            victory     : "sounds/harshita/victory.mp3",
+        }
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+5.2 CHARACTER INSTANCE STATE (CharacterController.js runtime)
+────────────────────────────────────────────────────────────────────────────────
+
+Each CharacterController instance tracks:
+
+    // Identity
+    data                    : HarshitaData (the static data object above)
+    playerIndex             : 1 | 2
+
+    // Position & Physics
+    position                : THREE.Vector3
+    velocity                : THREE.Vector3
+    facingDirection         : 1 | -1  (1=right, -1=left, auto-updated)
+    isGrounded              : bool
+    isOnWall                : bool
+
+    // Movement State
+    isWalking               : bool
+    isDashing               : bool
+    dashTimer               : float (counts down, 0 = dash over)
+    isCrouching             : bool
+    isJumping               : bool
+    jumpCount               : 0 | 1 | 2 (double jump tracking)
+
+    // Combat State
+    currentAction           : "idle"|"walk"|"attack"|"hit"|"block"|"knockdown"
+    isAttacking             : bool
+    attackPhase             : "startup"|"active"|"recovery"|null
+    attackFrameTimer        : int (counts down frames)
+    isBlocking              : bool
+    isInvulnerable          : bool (during certain animations)
+    canAct                  : bool (false during startup/recovery)
+    isKnockedDown           : bool
+    getUpTimer              : float
+
+    // Resources
+    currentHP               : float (0.0 to 100.0)
+    currentMana             : float (0.0 to 100.0)
+    guardMeter              : float (0.0 to 100.0, starts full)
+    hasUsedRageArt          : bool (reset each round)
+
+    // Animation
+    mixer                   : THREE.AnimationMixer
+    currentAnimation        : string
+    animations              : { name: THREE.AnimationAction } map
+
+    // Three.js
+    model                   : THREE.Group (loaded GLB)
+    hitboxMesh              : THREE.Mesh (invisible, for debug)
+
+────────────────────────────────────────────────────────────────────────────────
+5.3 CHARACTER FACING DIRECTION (Auto-Update)
+────────────────────────────────────────────────────────────────────────────────
+
+Characters always face each other. This is calculated every frame:
+
+    function updateFacingDirection(player1, player2) {
+        if (player1.position.x < player2.position.x) {
+            player1.facingDirection = 1;   // faces right
+            player2.facingDirection = -1;  // faces left
+        } else {
+            player1.facingDirection = -1;
+            player2.facingDirection = 1;
+        }
+        // Apply to Three.js model rotation
+        player1.model.rotation.y = player1.facingDirection === 1 ? 0 : Math.PI;
+        player2.model.rotation.y = player2.facingDirection === 1 ? 0 : Math.PI;
+    }
+
+"Block" input is ALWAYS "hold away from opponent" regardless of which
+side the character is on. InputManager handles this translation.
+
+────────────────────────────────────────────────────────────────────────────────
+5.4 CHARACTER LOADING PROCESS
+────────────────────────────────────────────────────────────────────────────────
+
+Loading order during LOADING state:
+
+    STEP 1 : Load arena GLB → add to Three.js scene
+    STEP 2 : Load character 1 GLB → position at x = -3, y = 0, z = 0
+    STEP 3 : Load character 2 GLB → position at x = +3, y = 0, z = 0
+    STEP 4 : Load all animation GLBs → attach to character mixers
+    STEP 5 : Load all sounds for both characters into SoundSystem
+    STEP 6 : Load arena music
+    STEP 7 : Load UI assets (health bar textures, fonts)
+    STEP 8 : Initialise physics world, create character capsules
+    STEP 9 : Set currentAnimation to "idle" for both
+    STEP 10: Transition to ROUND_INTRO state
+
+Loading progress is tracked and shown on loading screen as percentage.
+
+    totalAssets = (arenas + models + animations + sounds)
+    loadedAssets = 0
+    progress = loadedAssets / totalAssets * 100
+    → Updates loading bar in HTML
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 6 — INPUT SYSTEM (InputManager.js)
+════════════════════════════════════════════════════════════════════════════════
+
+InputManager listens to keyboard events and translates them into
+game actions. It handles double-tap detection for dashes.
+
+────────────────────────────────────────────────────────────────────────────────
+6.1 KEY BINDINGS (Default)
+────────────────────────────────────────────────────────────────────────────────
+
+    PLAYER 1 (Keyboard — left side):
+        W           → Move Forward
+        S           → Move Backward / Block (when facing opponent)
+        A           → Strafe Left
+        D           → Strafe Right
+        Space       → Jump / Double Jump
+        Ctrl        → Crouch (hold)
+        U           → Light Attack
+        I           → Medium Attack
+        O           → Heavy Attack
+        J           → Combo String
+        K           → Special Move (tap = full mana, hold 0.5s = half mana)
+        ESC         → Pause
+
+    PLAYER 2 (Keyboard — right side, for local testing):
+        Arrow Keys  → Movement
+        Numpad 1    → Light Attack
+        Numpad 2    → Medium Attack
+        Numpad 3    → Heavy Attack
+        Numpad 4    → Combo String
+        Numpad 5    → Special Move
+        Numpad 0    → Crouch
+
+    NOTE: In online multiplayer, only Player 1 bindings are needed
+    (each player uses their own keyboard on their own computer).
+
+────────────────────────────────────────────────────────────────────────────────
+6.2 INPUT STATE TRACKING
+────────────────────────────────────────────────────────────────────────────────
+
+InputManager maintains a currentInput object, updated every keydown/keyup:
+
+    currentInput = {
+        forward     : false,
+        backward    : false,
+        left        : false,
+        right       : false,
+        jump        : false,        ← true on keydown, false on keyup
+        jumpPressed : false,        ← single-frame true on keydown
+        crouch      : false,
+        lightAttack : false,        ← single-frame pulse on keydown
+        medAttack   : false,
+        heavyAttack : false,
+        comboString : false,
+        special     : false,
+        specialHeld : float,        ← how long K has been held (seconds)
+        block       : false,        ← computed: backward + opponent facing
+        pause       : false,
+    }
+
+Single-frame pulses: set to true on keydown, reset to false after one frame.
+This prevents "holding attack" from firing repeatedly.
+
+────────────────────────────────────────────────────────────────────────────────
+6.3 DOUBLE TAP DETECTION (for Dash)
+────────────────────────────────────────────────────────────────────────────────
+
+A double-tap is: same key pressed twice within 0.25 seconds.
+
+    doubleTapTracker = {
+        lastKey         : null,
+        lastKeyTime     : 0,
+        doubleTapWindow : 0.25,     ← seconds
+    }
+
+    On keydown event:
+        currentTime = Date.now() / 1000
+        if (key === lastKey && currentTime - lastKeyTime < doubleTapWindow) {
+            → fire DASH event for that direction
+            lastKey = null          ← reset to prevent triple-tap
+        } else {
+            lastKey = key
+            lastKeyTime = currentTime
+        }
+
+    Dash fires as: input.dashForward = true  OR  input.dashBackward = true
+    These are single-frame pulses consumed by CharacterController.
+
+────────────────────────────────────────────────────────────────────────────────
+6.4 BLOCK INPUT LOGIC
+────────────────────────────────────────────────────────────────────────────────
+
+Block is computed from raw input + character facing, not a direct key:
+
+    function computeBlock(rawInput, character) {
+        holdingBack = (character.facingDirection === 1 && rawInput.backward)
+                   || (character.facingDirection === -1 && rawInput.forward)
+        isNotAttacking = !character.isAttacking
+        return holdingBack && isNotAttacking
+    }
+
+This ensures block always means "away from opponent" regardless of side.
+If crouching + holding back → blockLow = true (blocks low attacks).
+
+────────────────────────────────────────────────────────────────────────────────
+6.5 SPECIAL MOVE INPUT (TAP vs HOLD)
+────────────────────────────────────────────────────────────────────────────────
+
+K key behaviour:
+    On keydown K → start timer: specialHeldTime = 0
+    Every frame while K held → specialHeldTime += deltaTime
+    On keyup K:
+        if specialHeldTime < 0.3s → fire FULL SPECIAL (costs 100% mana)
+        if specialHeldTime >= 0.3s → fire HALF SPECIAL (costs 50% mana)
+
+Characters without a half-special (Ryomen Raj's second combo is J+J,
+not K-based) — K always fires full special regardless of hold time.
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 7 — MOVEMENT & PHYSICS LOGIC
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+7.1 PHYSICS WORLD SETUP (Rapier.js)
+────────────────────────────────────────────────────────────────────────────────
+
+    const RAPIER = await import('@dimforge/rapier3d-compat')
+    await RAPIER.init()
+    physicsWorld = new RAPIER.World({ x:0, y:-20, z:0 })
+    ← Gravity: -20 m/s² (stronger than real = snappier game feel)
+
+PHYSICS OBJECTS:
+    Ground      : Static flat plane collider at y=0
+    Walls       : Static box colliders at arena boundary edges
+    Character 1 : Dynamic capsule collider (height=1.6, radius=0.35)
+    Character 2 : Dynamic capsule collider (same)
+    Projectiles : Dynamic sphere colliders (Inferno Fist, 9 CGPA, Leetcode)
+
+PHYSICS STEP: Called every frame before rendering.
+    physicsWorld.step()
+    → Read body position/rotation → Apply to Three.js model
+
+────────────────────────────────────────────────────────────────────────────────
+7.2 MOVEMENT LOGIC (Per Frame, in CharacterController.update)
+────────────────────────────────────────────────────────────────────────────────
+
+Each frame, movement is applied to the physics body's velocity:
+
+    WALKING:
+        moveDir = getInputDirection(input)  ← normalised x,z direction
+        if (character.canAct && !character.isDashing) {
+            velocity.x = moveDir.x * stats.walkSpeed
+            velocity.z = moveDir.z * stats.walkSpeed
+        }
+
+    DASHING:
+        On dash input:
+            character.isDashing = true
+            character.dashTimer = 0.3  ← seconds
+            character.canAct = false   ← cannot attack first 0.3s
+            dashVelocity = facingDirection * stats.dashSpeed
+        While dashTimer > 0:
+            dashTimer -= deltaTime
+            velocity.x = dashVelocity
+        When dashTimer <= 0:
+            character.isDashing = false
+            character.canAct = true
+
+    JUMPING:
+        On jump press (jumpCount < 2):
+            velocity.y = calculateJumpVelocity(jumpHeight)
+            ← formula: v = sqrt(2 * gravity * height)
+            jumpCount++
+            playAnimation("jump")
+        When character lands (isGrounded = true):
+            jumpCount = 0
+
+    CROUCHING:
+        On crouch hold:
+            character.isCrouching = true
+            → Scale capsule collider height by 0.6
+            → Lower camera slightly
+        On crouch release:
+            character.isCrouching = false
+            → Restore capsule height
+
+    ARENA BOUNDARY CHECK:
+        After velocity applied, check if new position exceeds arena limits:
+            arenaRadius = 10.0  ← metres from centre
+            if (distanceFromCentre > arenaRadius):
+                clamp position to boundary
+                zero out velocity pushing toward wall
+                character.isOnWall = true
+
+────────────────────────────────────────────────────────────────────────────────
+7.3 GROUND DETECTION
+────────────────────────────────────────────────────────────────────────────────
+
+    isGrounded is true when:
+        → Physics capsule is in contact with ground plane (y ≈ 0)
+        → Rapier contact event: character body touching ground body
+
+    isGrounded is false when:
+        → In air after jump
+        → Launched by attack (juggled)
+        → Knocked down and in air
+
+When isGrounded becomes true after jump:
+    → playAnimation("landing")
+    → camera shake: small 0.05 units for 0.1 seconds (heavy characters more)
+
+────────────────────────────────────────────────────────────────────────────────
+7.4 KNOCKBACK PHYSICS
+────────────────────────────────────────────────────────────────────────────────
+
+When a hit lands, knockback is applied to the struck character:
+
+    LIGHT HIT knockback  : { x: 2.0 * opponent.facingDirection, y: 0.5 }
+    MEDIUM HIT knockback : { x: 3.5 * opponent.facingDirection, y: 1.5 }
+    HEAVY HIT knockback  : { x: 5.0 * opponent.facingDirection, y: 3.0 }
+    LAUNCH (juggle)      : { x: 1.0 * opponent.facingDirection, y: 8.0 }
+    WALL BOUNCE          : { x: -6.0 * opponent.facingDirection, y: 2.0 }
+
+    ← facingDirection: which way attacker faces, so knockback goes away
+
+    applyKnockback(struckCharacter, knockbackVector) {
+        struckCharacter.physicsBody.applyImpulse(knockbackVector)
+        struckCharacter.canAct = false
+        struckCharacter.isAttacking = false
+    }
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 8 — ANIMATION SYSTEM
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+8.1 THREE.JS ANIMATION MIXER
+────────────────────────────────────────────────────────────────────────────────
+
+Each character has a THREE.AnimationMixer attached to their model.
+All animations are loaded as separate GLB files from Mixamo.
+
+LOADING ANIMATIONS:
+    const loader = new GLTFLoader()
+    for each animationFile in animationList:
+        gltf = await loader.loadAsync(animationFile)
+        clip = gltf.animations[0]
+        action = mixer.clipAction(clip)
+        animations[animationName] = action
+
+PLAYING AN ANIMATION:
+    function playAnimation(character, name, options = {}) {
+        if (character.currentAnimation === name) return
+        ← Don't restart same animation
+
+        previous = character.animations[character.currentAnimation]
+        next = character.animations[name]
+
+        if (options.crossFade) {
+            previous.fadeOut(0.15)      ← 0.15s smooth blend out
+            next.reset().fadeIn(0.15).play()
+        } else {
+            previous.stop()
+            next.reset().play()
+        }
+        character.currentAnimation = name
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+8.2 ANIMATION PRIORITY RULES
+────────────────────────────────────────────────────────────────────────────────
+
+Animations have priority. Higher priority cannot be interrupted by lower:
+
+    PRIORITY 5 (Highest) : rageArt, knockedDown
+    PRIORITY 4           : special, hitStun, guardBreak
+    PRIORITY 3           : attack animations (all)
+    PRIORITY 2           : jump, doubleJump, dash
+    PRIORITY 1           : crouch, crouchWalk
+    PRIORITY 0 (Lowest)  : idle, walk, run
+
+Before playing any animation:
+    if (newPriority < currentAnimationPriority) → ignore request
+    if (newPriority >= currentAnimationPriority) → play new animation
+
+────────────────────────────────────────────────────────────────────────────────
+8.3 ANIMATION → MOVEMENT SYNC
+────────────────────────────────────────────────────────────────────────────────
+
+    isWalking + forward    → play "walk" (crossFade from idle)
+    isWalking + any dir    → play "walk" (all directions use same anim)
+    speed > 8.0 (dash)     → play "run"
+    isJumping              → play "jump"
+    doubleJump             → play "double_jump" (can be same as jump)
+    isCrouching + still    → play "crouch_idle"
+    isCrouching + moving   → play "crouch_walk"
+    isBlocking             → play "block"
+    not moving, grounded   → play "idle"
+
+Attack animations override movement animations for their duration.
+After attack recovery ends → return to idle/walk based on movement input.
+
+────────────────────────────────────────────────────────────────────────────────
+8.4 ANIMATION MIXER UPDATE (Game Loop)
+────────────────────────────────────────────────────────────────────────────────
+
+Every frame in the game loop:
+    player1.mixer.update(deltaTime)
+    player2.mixer.update(deltaTime)
+
+deltaTime = time since last frame in seconds (typically ~0.016 for 60 FPS)
+This advances all animation clips forward by the correct amount.
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 9 — COMBAT SYSTEM (CombatSystem.js)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+9.1 ATTACK INITIATION
+────────────────────────────────────────────════════════════════════════════════
+
+When player presses an attack button:
+
+    function initiateAttack(character, moveType) {
+        // Gate: can only attack if free to act
+        if (!character.canAct) return
+        if (!character.isGrounded && moveType === 'comboString') return
+        if (character.currentMana < moveCost) return  ← for specials
+
+        character.isAttacking = true
+        character.canAct = false
+        character.attackPhase = "startup"
+        character.attackFrameTimer = move.startupFrames
+        character.currentMove = move
+
+        playAnimation(character, move.animation)
+        // Hitbox not active yet — character is in startup frames
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+9.2 ATTACK FRAME DATA & HITBOX LIFECYCLE
+────────────────────────────────────────────────────────────────────────────────
+
+Attack moves through 3 phases, tracked by frame counter:
+
+    STARTUP PHASE  (e.g. 6 frames)
+        → Character winding up
+        → Hitbox: INACTIVE
+        → Character: cannot be cancelled, cannot act
+        → Vulnerable to being hit (interrupts attack)
+
+    ACTIVE PHASE   (e.g. 4 frames)
+        → Hitbox: ACTIVE — can register hits
+        → Hit is only registered ONCE per attack (hitRegistered flag)
+        → If hit registered: fire damage, play hit effects
+        → If no hit by end of active phase: attack "whiffs" (miss)
+
+    RECOVERY PHASE (e.g. 8 frames)
+        → Hitbox: INACTIVE
+        → Character returning to neutral
+        → Cannot act (vulnerable to punishment)
+        → When recovery ends: canAct = true, isAttacking = false
+
+    Frame counting (60 FPS game = 60 frames per second):
+        attackFrameTimer -= 1 each frame
+        0 frames remain → advance to next phase
+
+────────────────────────────────────────────────────────────────────────────────
+9.3 HITBOX SYSTEM
+────────────────────────────────────────────────────────────────────────────────
+
+Hitboxes are defined per move as offsets from character position.
+They are checked geometrically each frame during active phase.
+
+HITBOX STRUCTURE:
+    hitbox = {
+        offset : {x, y, z}  ← world position = character.position + offset
+        size   : {x, y, z}  ← half-extents of box
+    }
+    ← Adjusted based on character.facingDirection for correct side
+
+HURTBOX (the region that receives hits):
+    Each character has a standing hurtbox and a crouching hurtbox.
+    Standing hurtbox  = capsule from head to feet (full height)
+    Crouching hurtbox = capsule shortened by 40% (low profile)
+
+HIT DETECTION (checked every frame during active phase):
+    function checkHit(attacker, defender) {
+        hitboxWorld = attacker.position + (attacker.currentMove.hitboxOffset
+                      * attacker.facingDirection)
+        hurtboxWorld = defender.position
+
+        // AABB intersection check:
+        overlapX = abs(hitboxWorld.x - hurtboxWorld.x) < (hitboxSize.x + hurtboxRadius)
+        overlapY = abs(hitboxWorld.y - hurtboxWorld.y) < (hitboxSize.y + hurtboxHeight/2)
+        overlapZ = abs(hitboxWorld.z - hurtboxWorld.z) < (hitboxSize.z + hurtboxRadius)
+
+        if (overlapX && overlapY && overlapZ && !attacker.hitRegistered) {
+            attacker.hitRegistered = true
+            registerHit(attacker, defender, attacker.currentMove)
+        }
+    }
+
+NOTE: Z-axis check has generous tolerance (±1.5m) since game is pseudo-3D
+      and players may not be perfectly aligned on Z axis.
+
+────────────────────────────────────────────────────────────────────────────────
+9.4 HIT REGISTRATION (registerHit function)
+────────────────────────────────────────────────────────────────────────────────
+
+When a hit is confirmed:
+
+    function registerHit(attacker, defender, move) {
+
+        // 1. CHECK INVULNERABILITY
+        if (defender.isInvulnerable) return
+
+        // 2. CHECK BLOCKING
+        if (isBlocking(defender, move)) {
+            applyBlockedHit(attacker, defender, move)
+            return
+        }
+
+        // 3. APPLY DAMAGE
+        rawDamage = move.damage
+        scaledDamage = applyComboScaling(rawDamage, defender.comboCounter)
+        defender.currentHP = max(0, defender.currentHP - scaledDamage)
+
+        // 4. MANA GAIN
+        attacker.currentMana = min(100, attacker.currentMana + move.manaGain)
+        defender.currentMana = min(100, defender.currentMana + 5)
+
+        // 5. APPLY KNOCKBACK
+        applyKnockback(defender, move.knockback, attacker.facingDirection)
+
+        // 6. HIT STUN
+        defender.hitStunTimer = move.hitStunFrames
+        defender.canAct = false
+        defender.isAttacking = false
+
+        // 7. SPECIAL HIT EFFECTS
+        if (move.causesLaunch)      → launcher logic
+        if (move.causesWallSplat)   → wall splat logic
+        if (move.causesGroundBounce)→ ground bounce logic
+
+        // 8. INCREMENT COMBO COUNTER
+        attacker.comboCounter++
+
+        // 9. PLAY EFFECTS
+        playHitEffect(defender.position, move.hitEffect)
+        SoundSystem.play(attacker.data.sounds.punchLight)  ← or relevant sound
+        playAnimation(defender, isHighHit ? "hit_high" : "hit_low")
+        updateHealthBar(defender)
+
+        // 10. CHECK ROUND END
+        if (defender.currentHP <= 0) triggerRoundEnd(attacker, defender)
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+9.5 BLOCKING LOGIC
+────────────────────────────────────────────────────────────────────────────────
+
+    function isBlocking(defender, move) {
+        if (!defender.isBlocking) return false
+        if (move.isUnblockable) return false
+
+        // High/Mid attacks: blocked by standing block
+        if (move.hitHeight === "high" || move.hitHeight === "mid") {
+            return defender.isBlocking && !defender.isCrouching
+        }
+
+        // Low attacks: only blocked by crouch + block
+        if (move.hitHeight === "low") {
+            return defender.isBlocking && defender.isCrouching
+        }
+        return false
+    }
+
+    function applyBlockedHit(attacker, defender, move) {
+        // Chip damage (10% of move damage)
+        chipDamage = move.damage * 0.10
+        defender.currentHP = max(0, defender.currentHP - chipDamage)
+
+        // Guard meter drain
+        guardDrain = move.guardDamage || (move.damage * 0.5)
+        defender.guardMeter = max(0, defender.guardMeter - guardDrain)
+
+        // Guard break check
+        if (defender.guardMeter <= 0) {
+            triggerGuardBreak(defender)
+        }
+
+        // Attacker still gains mana on blocked hit
+        attacker.currentMana = min(100, attacker.currentMana + 5)
+
+        // Visual: block spark effect
+        // Sound: block sound
+        playBlockEffect(defender.position)
+        SoundSystem.play("ui/block.mp3")
+        updateHealthBar(defender)    ← chip damage shows
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+9.6 GUARD BREAK
+────────────────────────────────────────────────────────────────────────────────
+
+    function triggerGuardBreak(defender) {
+        defender.isBlocking = false
+        defender.canAct = false
+        defender.isInGuardBreakStun = true
+        defender.guardBreakTimer = 1.5  ← 1.5 seconds stagger
+        defender.guardMeter = 0         ← stays at 0
+
+        playAnimation(defender, "guard_break_stun")
+        ← guard break plays a specific stagger animation
+
+        // Restore guard meter slowly during stun (starts recovering after)
+        // Guard meter refills at 20% per second when not being hit
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+9.7 COMBO SCALING
+────────────────────────────────────────────────────────────────────────────────
+
+Each hit in a combo deals less damage to prevent infinite loops:
+
+    comboScaleTable = [
+        1.00,   ← hit 1 (full damage)
+        1.00,   ← hit 2
+        0.90,   ← hit 3
+        0.80,   ← hit 4
+        0.70,   ← hit 5
+        0.60,   ← hit 6
+        0.50,   ← hit 7
+        0.40,   ← hit 8+
+    ]
+
+    function applyComboScaling(rawDamage, comboCounter) {
+        idx = min(comboCounter, comboScaleTable.length - 1)
+        return rawDamage * comboScaleTable[idx]
+    }
+
+comboCounter resets when:
+    → Defender lands on ground (fully grounded)
+    → Defender successfully blocks
+    → Round ends
+
+────────────────────────────────────────────────────────────────────────────────
+9.8 WALL INTERACTIONS
+────────────────────────────────────────────────────────────────────────────────
+
+    WALL SPLAT:
+        Triggered when: defender is knocked into boundary wall
+        Detection: defender.position reaches arenaRadius limit while
+                   knockback velocity is still active
+
+        Effect:
+            defender.isWallSplatted = true
+            defender.wallSplatTimer = 0.8  ← 0.8 second stun at wall
+            defender.velocity = { x:0, y:0, z:0 }  ← pinned to wall
+            play wall crack particle effect at impact point
+            camera shake: 0.1 units, 0.15 seconds
+
+    WALL BOUNCE:
+        Triggered when: heavy attack connects on wall-splatted defender
+
+        Effect:
+            defender.isWallSplatted = false
+            apply bounceKnockback: { x: -8 * attacker.facingDirection, y: 2 }
+            ← flies back toward centre
+            attacker has ~0.7 seconds to dash in and continue combo
+
+────────────────────────────────────────────────────────────────────────────────
+9.9 AIR JUGGLING
+────────────────────────────────────────────────────────────────────────────────
+
+Juggling occurs when defender is hit while airborne (after launch):
+
+    LAUNCH:
+        move.causesLaunch = true
+        Apply strong upward knockback: { x: 1.5, y: 9.0 }
+        defender.isJuggling = true
+        defender.juggleCounter = 0
+        defender.isInvulnerable = false  ← can be hit in air
+
+    JUGGLE HITS:
+        While defender.isJuggling = true:
+            Light and Medium attacks can hit
+            Each air hit: juggleCounter++
+            Gravity gradually increases per juggle hit
+            Air combo scaling: starts at 0.7 multiplier from first air hit
+
+    JUGGLE END:
+        When defender lands on ground:
+            defender.isJuggling = false
+            defender.juggleCounter = 0
+            play "knockedDown" animation
+            defender.isKnockedDown = true
+            defender.getUpTimer = 1.0  ← 1 second before can get up
+
+    TECH ROLL (Optional - future feature):
+        On landing from juggle: press Light Attack to tech roll
+        Rolls character to side, skips knockdown state
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 10 — HEALTH SYSTEM (HealthSystem.js)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+10.1 HEALTH BAR STRUCTURE (HTML + CSS)
+────────────────────────────────────────────────────────────────────────────────
+
+Each health bar is a layered HTML element (not Three.js — stays as HTML HUD):
+
+    <div class="health-bar-container p1">
+        <div class="character-name">HARSHITA</div>
+        <div class="hp-bar-outer">
+            <div class="hp-bar-ghost" id="p1-hp-ghost"></div>  ← delayed drain
+            <div class="hp-bar-fill"  id="p1-hp-fill"></div>   ← real HP
+        </div>
+        <div class="mana-bar-outer">
+            <div class="mana-bar-fill" id="p1-mana-fill"></div>
+        </div>
+        <div class="round-indicators">
+            <span class="round-dot" id="p1-r1">☆</span>
+            <span class="round-dot" id="p1-r2">☆</span>
+            <span class="round-dot" id="p1-r3">☆</span>
+        </div>
+    </div>
+
+CSS DETAILS:
+    .hp-bar-outer:
+        width: 40vw
+        height: 20px
+        background: #1a1a1a
+        border: 2px solid #333
+        border-radius: 3px
+
+    .hp-bar-fill:
+        height: 100%
+        background: linear-gradient(to right, #e8b800, #ff4400)
+        ← Golden-yellow at high HP, orange-red at low HP
+        transition: width 0.05s linear  ← snappy response
+        width: 100%  ← starts full
+
+    .hp-bar-ghost:
+        height: 100%
+        background: #cc3300
+        position: absolute
+        ← Sits behind hp-bar-fill, drains slowly after damage
+        transition: width 0.8s ease-out  ← slow ghost drain (visual effect)
+
+    .mana-bar-fill:
+        height: 8px
+        background: linear-gradient(to right, #0088ff, #00ffcc)
+        ← Blue to cyan gradient
+
+    Player 1 bar: left-aligned, grows right to left
+    Player 2 bar: right-aligned, grows left to right (mirrored)
+
+────────────────────────────────────────────────────────────────────────────────
+10.2 HEALTH BAR UPDATE FUNCTION
+────────────────────────────────────────────────────────────────────────────────
+
+Called every time damage is dealt:
+
+    function updateHealthBar(character, playerIndex) {
+        hpPercent = character.currentHP / 100.0
+        fillEl = document.getElementById(`p${playerIndex}-hp-fill`)
+        ghostEl = document.getElementById(`p${playerIndex}-hp-ghost`)
+
+        // Snap fill bar to current HP immediately
+        fillEl.style.width = (hpPercent * 100) + "%"
+
+        // Ghost bar stays at old width, then slowly catches up
+        // (ghost transition is 0.8s ease-out in CSS — automatic)
+
+        // Colour shift at low HP
+        if (hpPercent < 0.30) {
+            fillEl.style.background = "linear-gradient(to right, #ff0000, #cc0000)"
+            ← Solid red when below 30% (Rage Art zone visual hint)
+        }
+
+        // Flashing border when below 10%
+        if (hpPercent < 0.10) {
+            fillEl.parentElement.classList.add("critical-flash")
+        }
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+10.3 ROUND LOGIC
+────────────────────────────────────────────────────────────────────────────────
+
+    ROUND START:
+        player1.currentHP = 100
+        player2.currentHP = 100
+        player1.currentMana = 0
+        player2.currentMana = 0
+        player1.guardMeter = 100
+        player2.guardMeter = 100
+        player1.hasUsedRageArt = false
+        player2.hasUsedRageArt = false
+        player1.comboCounter = 0
+        player2.comboCounter = 0
+        roundTimer = 75.0
+        gameState = STATE_ROUND_INTRO
+
+        "ROUND X" text animates in for 1.5 seconds
+        "FIGHT!" flashes
+        gameState = STATE_FIGHTING
+
+    ROUND END TRIGGERS:
+        → Any character's HP reaches 0 → KO
+        → roundTimer reaches 0 → Timeout (higher HP wins)
+
+    function triggerRoundEnd(winner, loser) {
+        gameState = STATE_ROUND_END
+
+        winner.matchData.roundsWon++
+        → light up one round indicator star (filled star)
+
+        playAnimation(loser, "knockedDown")
+        playAnimation(winner, "victory")  ← brief victory pose
+
+        // "K.O!" text flashes on screen
+        // Slow motion: last 0.3 seconds before end (time scale 0.2 for 0.5s)
+
+        if (winner.roundsWon >= 2) {
+            → match is over → STATE_MATCH_END
+        } else {
+            wait 2 seconds → next round → STATE_ROUND_INTRO
+        }
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+10.4 TIMER SYSTEM
+────────────────────────────────────────────────────────────────────────────────
+
+    roundTimer = 75.0  ← seconds
+    Only counts down during STATE_FIGHTING
+
+    Every frame:
+        if (gameState === STATE_FIGHTING) {
+            roundTimer -= deltaTime
+            timerDisplay.textContent = Math.ceil(roundTimer)
+        }
+
+        if (roundTimer <= 10 && !warningPlayed) {
+            SoundSystem.play("ui/timer_warning.mp3")
+            warningPlayed = true
+            timerDisplay.classList.add("timer-warning")  ← turns red, pulses
+        }
+
+        if (roundTimer <= 0) {
+            roundTimer = 0
+            → Timeout: whoever has higher HP wins round
+            winner = p1.currentHP > p2.currentHP ? p1 : p2
+            triggerRoundEnd(winner, loser)
+        }
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 11 — MANA SYSTEM (ManaSystem.js)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+11.1 MANA RULES
+────────────────────────────────────────────────────────────────────────────────
+
+    Starting value  : 0% per round
+    Maximum         : 100%
+    On hit landed   : +10% (attacker gains)
+    On hit received : +5%  (defender gains — being hit also fills mana)
+    On block         : +3% to both attacker and defender
+    Full special cost: 100% mana
+    Half special cost: 50% mana
+    Rage Art cost   : ALL remaining mana
+
+    Mana clamps at 0 and 100. Cannot go negative.
+    Mana does NOT carry between rounds.
+
+────────────────────────────────────────────────────────────────────────────────
+11.2 MANA BAR VISUAL
+────────────────────────────────────────────────────────────────────────────────
+
+    Smooth fill: CSS transition width 0.2s ease
+    Colour: Blue (#0088ff) to Cyan (#00ffcc) gradient
+    At 100%: brief pulse/glow animation (1 flash) to signal "special ready"
+    At 50%: subtle glow for half-special availability (for characters with it)
+
+────────────────────────────────────────────────────────────────────────────────
+11.3 SPECIAL MOVE MANA GATE
+────────────────────────────────────────────────────════════════════════════════
+
+    function canUseSpecial(character, isHalfSpecial) {
+        required = isHalfSpecial ? 50 : 100
+        return character.currentMana >= required
+    }
+
+    If player presses K and mana insufficient:
+        → Short "fail" sound (brief buzz)
+        → Mana bar flashes red once
+        → No special fires
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 12 — SPECIAL MOVE SYSTEM (SpecialMoveSystem.js)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+12.1 HARSHITA — LEETCODE SWARM
+────────────────────────────────────────────────────────────────────────────────
+
+TRIGGER     : K (full mana)
+MANA COST   : 100%
+
+SEQUENCE:
+    1. Harshita raises both arms in a brief charge pose (0.4 seconds)
+    2. Cinematic camera shift (closes in on Harshita, angled)
+    3. Create 8 projectile objects (THREE.js sprites or small meshes)
+       Each shaped as a glowing symbol: +, −, $, %, /, *, (, )
+    4. Symbols fly from Harshita's position toward opponent in wave pattern
+       NOT all straight — they fan out in slightly different trajectories
+       but all converge toward opponent position
+    5. Each symbol collision with opponent deals: 22% / 8 = 2.75% per symbol
+       (total = 22% if all connect, partial if they move)
+    6. Symbol visual: bright cyan/green glow with motion trail
+    7. Impact: each symbol hit creates small electric spark effect
+    8. After last symbol: camera snaps back to normal
+
+PROJECTILE LOGIC:
+    for each symbol in swarmProjectiles:
+        symbol.velocity = normalize(target - origin) * speed + randomOffset
+        symbol.speed = 8.0 to 12.0 m/s (randomised per symbol)
+        symbol.lifetime = 2.0 seconds (despawn if no hit)
+        symbol.hasHit = false
+
+    Each frame: move symbol by velocity * deltaTime
+    If symbol AABB overlaps opponent hurtbox and !symbol.hasHit:
+        symbol.hasHit = true
+        deal 2.75% damage
+        play small spark effect at impact
+
+────────────────────────────────────────────────────────────────────────────────
+12.2 HARSHITA·S — 9 CGPA
+────────────────────────────────────────────────────────────────────────────────
+
+TRIGGER     : K (full mana)
+MANA COST   : 100%
+
+SEQUENCE:
+    1. Harshita·S spreads arms, golden aura particles spawn around her
+    2. She draws a glowing number "9" in the air in front of her
+       (Tween animation: starts as small point, grows to large 9 over 0.6s)
+    3. The "9" solidifies and rotates slowly
+    4. Cinematic camera shift — side angle showing both fighter and the 9
+    5. The "9" launches forward as a physical projectile (large, dense)
+    6. Travels at 10 m/s directly toward opponent
+    7. On hit: deals 25% damage, large golden burst effect, opponent flies back
+    8. On miss: 9 hits wall, shatters into golden particles
+    9. Camera snaps back
+
+PROJECTILE LOGIC:
+    nineObject = create THREE.js mesh (glowing yellow text geometry or sprite)
+    nineObject.position = harshitaS.position + {x: 1.0 * facing, y: 1.2}
+    nineObject.velocity = { x: facing * 10.0, y: 0, z: 0 }
+    nineObject.scale = { x:1.2, y:1.2, z:0.3 }  ← wide, impactful
+    nineObject.lifetime = 3.0 seconds
+
+    Each frame: move forward
+    If nineObject AABB overlaps opponent hurtbox:
+        deal 25% damage
+        apply strong knockback: { x: 7.0, y: 3.0 }
+        play golden explosion particle system at impact
+        destroy nineObject
+
+────────────────────────────────────────────────────────────────────────────────
+12.3 DEBOJEET — INFERNO FIST
+────────────────────────────────────────────────────────────────────────────────
+
+TRIGGER     : K (full mana)
+MANA COST   : 100%
+
+SEQUENCE:
+    1. Debojeet plants feet (stops all movement) — wide stance
+    2. Right fist slowly closes — fire particle system spawns on fist
+       Colour: deep orange → bright white-orange core (0.8 seconds charge)
+    3. Heat distortion effect (shimmer) around fist
+    4. Cinematic: camera shakes slightly during charge
+    5. He releases: fireball sphere launches from fist position
+    6. Fireball: dense, not flashy — dark orange with fire particle trail
+    7. Travels STRAIGHT forward at 14 m/s — no arc, no spread
+    8. On hit: 28% damage, fire burst, opponent slams back
+    9. On wall: small explosion, scorched mark on wall texture
+    10. After firing: Debojeet returns to idle (0.8s recovery — punishable)
+
+FIREBALL PHYSICS:
+    fireball = THREE.Mesh (sphere, 0.35 radius)
+    fireball.emissive = orange fire colour
+    fireball.velocity = { x: facing * 14.0, y: 0, z: 0 }
+    Add particle trail: small fire particles emitting behind sphere
+    Lifetime: 4.0 seconds or until hit
+
+────────────────────────────────────────────────────────────────────────────────
+12.4 RYOMEN RAJ — DOMAIN EXPANSION: THE OTHER WORLD
+────────────────────────────────────────────────────────────────────────────────
+
+TRIGGER     : K (full mana)
+MANA COST   : 100%
+
+SEQUENCE:
+    1. Raj stops. Camera slowly zooms in on his face.
+    2. He exhales slowly (0.5 second pause — unsettling)
+    3. DOMAIN EXPANSION TRIGGER:
+       — Skybox colour inverts (or shifts to dark purple/black void)
+       — Ground texture warps (ripple shader effect)
+       — Dark particle system fills screen edges
+       — Entire scene desaturates except for Raj
+       — Duration of warped state: 5.0 seconds
+    4. Raj's posture changes (different animation state — straight, focused)
+       His eyes glow slightly (emissive material on eye mesh)
+    5. He unleashes 6-hit sequence in this state:
+       Hits are faster, reach farther, use different animations
+       Each hit has dark cursed energy particle burst
+    6. After hit sequence (or 5 seconds, whichever first):
+       World snaps back to normal
+       Raj returns to slouching idle animation
+       He looks vaguely bored again
+    7. Total damage if all hits connect: 35%
+
+DOMAIN VISUAL IMPLEMENTATION:
+    // Invert skybox
+    scene.background = new THREE.Color(0x0a0005)  ← near black purple
+
+    // Ground shader effect (ripple):
+    Use a custom Three.js shader on ground plane
+    uniforms.time increases while domain active
+    → Creates animated ripple distortion on floor texture
+
+    // Screen edge particles:
+    ParticleSystem at screen corners, dark smoky wisps
+    Emitting inward, slow drift
+
+    // Reset after 5 seconds:
+    scene.background = arenaOriginalBackground
+    ground material restored
+    particles stopped
+
+────────────────────────────────────────────────────────────────────────────────
+12.5 TORNADO KICK (Harshita AND Harshita·S)
+────────────────────────────────────────────────────────────────────────────────
+
+TRIGGER     : K held (half mana)
+MANA COST   : 50%
+
+HARSHITA VERSION:
+    1. One deep breath (0.3s), stance widens
+    2. Full spinning heel kick — character rotates 540 degrees rapidly
+    3. Wind vortex particle effect spawns around kick foot
+    4. Hitbox: active during rotation, sweeps arc in front of character
+    5. On hit: 18% damage, launches opponent upward for juggle
+    6. Vortex visuals: white/blue wind lines radiating outward
+
+HARSHITA·S VERSION:
+    Identical execution but:
+    → Faster startup (0.2s wind-up instead of 0.3s)
+    → Slightly less launch height
+    → Additional effect: opponent directional controls scrambled 1 second
+       (their left/right input inverted briefly — disorientation)
+    → Wind vortex is tighter, more controlled (matches her style)
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 13 — RAGE ART SYSTEM (RageArtSystem.js)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+13.1 RAGE ART TRIGGER GATE
+────────────────────────────────────────────────────────────────────────────────
+
+    function canTriggerRageArt(character) {
+        return (
+            character.data.hasRageArt &&
+            !character.hasUsedRageArt &&
+            character.currentHP <= 30 &&
+            character.currentMana > 0  ← needs at least some mana
+        )
+    }
+
+Input for Rage Art:
+    Press Special (K) + Heavy Attack (O) simultaneously
+
+    Simultaneous = both pressed within 0.08 seconds of each other.
+
+────────────────────────────────────────────────────────────────────────────────
+13.2 RAGE ART SEQUENCE (ALL CHARACTERS)
+────────────────────────────────────────────────────────────────────────────────
+
+    function triggerRageArt(character, opponent) {
+        if (!canTriggerRageArt(character)) return
+
+        // Lock both characters during cinematic
+        character.isInvulnerable = true
+        opponent.canAct = false
+        character.canAct = false
+        character.hasUsedRageArt = true
+
+        // Consume all mana
+        character.currentMana = 0
+        updateManaBar(character)
+
+        // Cinematic mode
+        CameraController.enterCinematicMode(character)
+        UIManager.dimHUD(0.2)    ← dim to 20% opacity
+        SoundSystem.play(character.data.sounds.rageArt)
+
+        // Slow motion ramp
+        timeScale = 0.2  ← everything slows to 20% speed
+        wait 0.5 seconds real time (appears as 2.5s in game)
+        timeScale = 1.0  ← snap back to normal
+
+        // Execute character-specific rage art
+        executeRageArt[character.data.id](character, opponent)
+
+        // After animation completes:
+        CameraController.exitCinematicMode()
+        UIManager.restoreHUD()
+        character.isInvulnerable = false
+        opponent.canAct = true
+        character.canAct = true
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+13.3 HARSHITA — UNDYING RESOLVE
+────────────────────────────────────────────────────────────────────────────────
+
+    1. Harshita closes eyes — camera slowly pushes in on her face
+    2. Glow of white-gold light washes over her
+    3. HP bar increases: +10% (with smooth fill animation upward)
+    4. Her eyes open — slight camera pull back
+    5. She settles back into fighting stance, unhurried
+    6. Camera returns to normal
+    7. No damage dealt to opponent
+
+    HP RESTORE:
+        character.currentHP = min(100, character.currentHP + 10)
+        updateHealthBar(character)  ← HP bar fills up slightly
+
+────────────────────────────────────────────────────────────────────────────────
+13.4 HARSHITA·S — ACADEMIC RESILIENCE
+────────────────────────────────────────────────────────────────────────────────
+
+    1. She adjusts her stance — unnecessarily calm for her HP level
+    2. Golden aura forms around her briefly
+    3. HP bar: +10% (smooth upward fill)
+    4. She immediately transitions into a counter strike:
+       → A targeted strike at opponent's exposed point (deals 8% bonus damage)
+       → This counter hit fires as part of the Rage Art animation
+    5. Camera returns to normal
+
+    NOTE: The bonus counter hit is only if opponent is in range.
+    If opponent is far away: only HP restore applies, counter misses.
+
+────────────────────────────────────────────────────────────────────────────────
+13.5 DEBOJEET — THE LAST LESSON
+────────────────────────────────────────────────────────────────────────────────
+
+RANGE GATE: Only activates if opponent is within 2.5 metres.
+            If opponent is too far: nothing happens, mana is NOT consumed,
+            rage art is NOT counted as used. Player can try again closer.
+
+    CHECK FIRST:
+        distance = Vector3.distance(debojeet.position, opponent.position)
+        if (distance > 2.5) {
+            → "out of range" effect (brief red flash on rage art button hint)
+            return  ← don't consume anything
+        }
+
+    SEQUENCE:
+    1. Debojeet lowers stance — Iron Fortress — arms cross in front
+    2. ABSORB: He absorbs the next incoming hit with ZERO damage taken
+       (if opponent attacks during next 0.5 seconds: fully absorbed, no damage)
+    3. He grabs opponent — judo throw 1 (lateral hip throw)
+    4. Opponent crashes to ground — bounce
+    5. He grabs again — judo throw 2 (over-the-shoulder)
+    6. Opponent slams again
+    7. Final throw — he lifts straight overhead and drives straight down
+    8. On impact: camera shake (large), dust explosion, arena floor crack effect
+    9. Total: 40% damage across 3 throws
+    10. Camera returns. Debojeet stands over fallen opponent. Exhales once.
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 14 — RYOMEN RAJ — EXCLUSIVE COMBO SYSTEM
+════════════════════════════════════════════════════════════════════════════════
+
+Ryomen Raj has an extended combo system no other character has.
+
+    CHAOS STRING (J once):
+        5-hit combo: hits 1-5 from different angles
+        Total base damage: 18% (combo scaled)
+        Animations: chaotic, no fixed pattern, each hit direction varies
+
+    SECRET ART CHAIN (J pressed again immediately after Chaos String lands):
+        Extends the combo with 3 more cursed energy hits
+        Only triggers if: last hit of Chaos String connected (not blocked)
+        Adds 8% additional damage (combo scaled, so ~5-6% realistic)
+        Total with chain: ~22-26% realistic damage
+
+    TIMING WINDOW:
+        Player has 0.4 seconds after last Chaos String hit to press J again
+        If pressed in time and hit connected → chain extends automatically
+        If blocked or missed → chain does not trigger
+
+    VISUAL DISTINCTION:
+        Chaos String: physical strikes with dark energy crackle
+        Secret Art Chain: the dark energy becomes visible — hitting with pure
+                          cursed force rather than physical limbs
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 15 — CAMERA SYSTEM (CameraController.js)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+15.1 GAMEPLAY CAMERA
+────────────────────────────────────────────────────────────────────────────────
+
+The camera always keeps both fighters visible.
+
+    MIDPOINT TRACKING:
+        midpoint = (player1.position + player2.position) / 2
+
+    DISTANCE CALCULATION:
+        fightDistance = Vector3.distance(player1.position, player2.position)
+        cameraDistance = baseDistance + (fightDistance * zoomFactor)
+        baseDistance = 8.0 metres
+        zoomFactor = 0.6  ← zooms out 0.6 for every extra metre apart
+
+    CAMERA POSITION:
+        camera.position.x = midpoint.x
+        camera.position.y = midpoint.y + 3.0  ← elevated above fight
+        camera.position.z = midpoint.z + cameraDistance
+
+    CAMERA TARGET (lookAt):
+        camera.lookAt(midpoint)
+
+    SMOOTHING (prevents jitter):
+        actualPos = lerp(actualPos, targetPos, 0.08 * deltaTime * 60)
+        ← Smooth interpolation at ~8% per frame toward target
+
+    VERTICAL TRACKING:
+        If fighters jump high: camera follows midpoint Y up to 2 metres max
+        Returns to base Y smoothly when fighters land
+
+    MINIMUM DISTANCE (prevent extreme close-up):
+        cameraDistance = max(6.0, cameraDistance)
+
+    MAXIMUM DISTANCE (arena boundary):
+        cameraDistance = min(15.0, cameraDistance)
+
+────────────────────────────────────────────────────────────────────────────────
+15.2 CINEMATIC CAMERA (Specials and Rage Arts)
+────────────────────────────────────────────────────────────────────────────────
+
+Each special move has a preset cinematic camera position:
+
+    cinematicPresets = {
+        "harshita_leetcode" : {
+            position: { x: +2.0, y: 1.8, z: +4.0 },  ← relative to attacker
+            lookAt: "attacker",
+            fov: 55,  ← slightly narrower for dramatic compression
+        },
+        "harshita_s_9cgpa" : {
+            position: { x: -3.0, y: 2.5, z: +3.0 },
+            lookAt: "midpoint",
+            fov: 50,
+        },
+        "debojeet_inferno" : {
+            position: { x: +1.0, y: 1.2, z: +5.0 },
+            lookAt: "attacker_hands",
+            fov: 60,
+        },
+        "ryomen_domain" : {
+            position: { x: 0, y: 4.0, z: -2.0 },  ← top-down dramatic
+            lookAt: "midpoint",
+            fov: 45,
+        },
+        "debojeet_rage" : {
+            position: { x: +3.0, y: 2.0, z: +3.0 },
+            lookAt: "both_fighters",
+            fov: 50,
+        }
+    }
+
+    function enterCinematicMode(character, presetKey) {
+        preset = cinematicPresets[presetKey]
+        targetPos = character.position + preset.position
+        // Tween camera from current position to cinematic position
+        tweenCamera(camera.position, targetPos, 0.25)
+        tweenFOV(camera.fov, preset.fov, 0.25)
+        cinematicActive = true
+    }
+
+    function exitCinematicMode() {
+        tweenCamera(camera.position, gameplayPosition, 0.3)
+        tweenFOV(camera.fov, defaultFov, 0.3)
+        cinematicActive = false
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+15.3 CAMERA SHAKE
+────────────────────────────────────────────────────────────────────────────────
+
+    function shakeCamera(intensity, duration) {
+        shakeIntensity = intensity
+        shakeDuration = duration
+        shakeTimer = duration
+    }
+
+    // Each frame while shakeTimer > 0:
+        offset.x = (Math.random() - 0.5) * shakeIntensity
+        offset.y = (Math.random() - 0.5) * shakeIntensity
+        camera.position.x += offset.x
+        camera.position.y += offset.y
+        shakeTimer -= deltaTime
+        shakeIntensity *= 0.9  ← decays over time (rumble, not snap)
+
+    SHAKE EVENTS:
+        Light hit          : intensity 0.03, duration 0.1s
+        Heavy hit          : intensity 0.08, duration 0.2s
+        Wall splat         : intensity 0.12, duration 0.25s
+        Debojeet final slam: intensity 0.25, duration 0.4s
+        Rage Art impact    : intensity 0.20, duration 0.35s
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 16 — SOUND SYSTEM (SoundSystem.js)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+16.1 WEB AUDIO API SETUP
+────────────────────────────────────────════════════════════════════════════════
+
+The game uses the browser's native Web Audio API — no external libraries.
+
+    audioContext = new (window.AudioContext || window.webkitAudioContext)()
+
+    NOTE: Browser policy requires a user interaction before audio starts.
+    Solution: All audio initialised on first click/keypress.
+    A subtle "Click anywhere to enable sound" prompt on splash screen.
+
+────────────────────────────────────────────────────────────────────────────────
+16.2 SOUND LOADING
+────────────────────────────────────────────────────────────────────────────────
+
+All sounds pre-loaded into AudioBuffer objects during LOADING state:
+
+    soundBuffers = {}  ← key → AudioBuffer map
+
+    async function loadSound(key, url) {
+        response = await fetch(url)
+        arrayBuffer = await response.arrayBuffer()
+        soundBuffers[key] = await audioContext.decodeAudioData(arrayBuffer)
+    }
+
+    // Load all sounds with their keys:
+    await loadSound("harshita_punch_light", "sounds/harshita/punch_light.mp3")
+    await loadSound("harshita_punch_heavy", "sounds/harshita/punch_heavy.mp3")
+    // ... all sounds
+
+────────────────────────────────────────────────────────────────────────────────
+16.3 SOUND PLAYBACK
+────────────────────────────────────────────────────────────────────────────────
+
+    function playSound(key, options = {}) {
+        buffer = soundBuffers[key]
+        if (!buffer) return
+
+        source = audioContext.createBufferSource()
+        source.buffer = buffer
+
+        gainNode = audioContext.createGain()
+        gainNode.gain.value = options.volume || 1.0
+
+        source.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+
+        source.start(options.startOffset || 0)
+        return source  ← returned so it can be stopped if needed
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+16.4 AUDIO CHANNELS / MIXING
+────────────────────────────────────────────────────────────────────────────────
+
+Three separate gain nodes act as audio channels:
+
+    masterGain  : Overall volume (user setting)
+    musicGain   : Background music channel (separate volume control)
+    sfxGain     : All sound effects channel
+
+    audioContext.destination
+        ← masterGain
+            ← musicGain  (music goes here)
+            ← sfxGain    (all SFX go here)
+
+    Default volumes:
+        masterGain : 1.0
+        musicGain  : 0.6  ← music quieter than SFX by default
+        sfxGain    : 1.0
+
+────────────────────────────────────────────────────────────────────────────────
+16.5 MUSIC SYSTEM
+────────────────────────────────────────────────────────────────────────────────
+
+Music loops continuously. Only one music track plays at a time.
+Smooth crossfade when switching tracks.
+
+    currentMusic = null
+    currentMusicSource = null
+
+    function playMusic(key, fadeTime = 1.0) {
+        if (currentMusicSource) {
+            // Fade out current
+            currentMusicGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fadeTime)
+            setTimeout(() => currentMusicSource.stop(), fadeTime * 1000)
+        }
+
+        source = createBufferSource(soundBuffers[key])
+        source.loop = true
+
+        newGain = audioContext.createGain()
+        newGain.gain.value = 0
+        newGain.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + fadeTime)
+        ← Fade in new track
+
+        source.connect(newGain)
+        newGain.connect(musicGain)
+        source.start()
+
+        currentMusicSource = source
+        currentMusicGain = newGain
+    }
+
+    MUSIC TRACKS PER STATE:
+        STATE_SPLASH / MAIN_MENU / CHAR_SELECT / ARENA_SELECT → "menu_theme"
+        STATE_FIGHTING (temple)    → "arena_temple"
+        STATE_FIGHTING (district)  → "arena_district"
+        STATE_POST_MATCH           → "menu_theme" (or brief victory sting first)
+
+────────────────────────────────────────────────────────────────────────────────
+16.6 SOUND EVENTS (When each sound fires)
+────────────────────────────────────────────────────────────────────────────────
+
+    COMBAT SOUNDS fire in registerHit() or initiateAttack():
+
+    Event                   Key                         Volume
+    ─────────────────────── ─────────────────────────── ───────
+    Light attack swing      [char]_punch_light          0.8
+    Heavy attack swing      [char]_punch_heavy          1.0
+    Combo string            [char]_combo                0.9
+    Hit received (light)    [char]_hit_receive          0.7
+    Hit received (heavy)    [char]_hit_receive          1.0    (pitch shifted -10%)
+    Block                   ui/block                    0.6
+    Guard break             ui/guard_break              0.9
+    Miss / whiff            ui/whoosh                   0.4
+    Wall splat              ui/wall_splat               0.9
+    Special activate        [char]_special_1 or _2      1.0
+    Rage Art activate       [char]_rage_art             1.0
+    Victory                 [char]_victory              0.9
+    Evil laugh (Raj win)    ryomen_raj_evil_laugh       1.0
+    KO announce             ui/ko_announce              1.0
+    Fight announce          ui/fight_announce           1.0
+    Timer warning           ui/timer_warning            0.8
+    Menu click              ui/menu_click               0.7
+    Menu hover              ui/menu_hover               0.5
+    Room code generated     ui/code_generated           0.8
+    Opponent connected      ui/connected_chime          0.9
+    Mana full               ui/mana_full                0.6    (brief shimmer)
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 17 — VISUAL EFFECTS SYSTEM
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+17.1 HIT EFFECTS (Particle Systems)
+────────────────────────────────────────────────────────────────────────────────
+
+Each hit type spawns a particle burst at the impact point:
+
+    LIGHT HIT   : Small dust/spark burst — 12 particles, fast, white/grey
+    MEDIUM HIT  : Larger spark burst — 20 particles, yellow/orange
+    HEAVY HIT   : Large impact burst — 30 particles, orange/red, ground dust
+    BLOCK       : White spark flash — 15 particles, metallic
+    GUARD BREAK : Red energy burst — 25 particles, expanding ring
+    WALL SPLAT  : Debris + dust — 35 particles, grey/brown, wall crack
+    GROUND SLAM : Ground shockwave ring, 40 particles radiating outward
+
+PARTICLE SYSTEM IMPLEMENTATION (Three.js Points):
+    Each particle system is a pre-built pool of THREE.Points objects.
+    On effect trigger: pull from pool, set position, activate.
+    Particles move by velocity, fade out by opacity over lifetime.
+    After lifetime: return to pool (no garbage creation).
+
+    particlePool = []  ← pre-created pool of 20 particle systems
+    function getParticleSystem() → returns inactive one from pool
+    function releaseParticleSystem(ps) → marks as inactive, returns to pool
+
+────────────────────────────────────────────────────────────────────────────────
+17.2 SPECIAL MOVE VISUAL EFFECTS
+────────────────────────────────────────────────────────────────────────────────
+
+    LEETCODE SWARM:
+        Each symbol: THREE.Sprite with glowing texture (+ − $ % / *)
+        Green/cyan emissive glow
+        Motion trail: 5 ghost positions fading behind each symbol
+        On impact: electric spark burst (blue-white)
+
+    9 CGPA:
+        THREE.Mesh with golden emissive material
+        Pulsing scale animation while charging
+        Rotating around Y axis while in flight
+        Impact: golden explosion, screen flash (brief, 0.1s white overlay)
+
+    INFERNO FIST CHARGE:
+        THREE.PointLight on fist position, orange colour
+        Intensity increases during charge (0 → 3.0)
+        Fire particle system on hand: 40 particles, orange/white, upward drift
+        Heat shimmer: custom vertex shader on ground plane near Debojeet
+
+    FIREBALL IN FLIGHT:
+        THREE.Mesh sphere with fire shader (animated noise texture)
+        THREE.PointLight follows it (orange, intensity 2.0, range 3m)
+        Fire particle trail behind sphere
+
+    DOMAIN EXPANSION:
+        Skybox: THREE.Color change with tween
+        Ground: ripple shader (vertex displacement with time uniform)
+        Edge vignette: fullscreen HTML overlay div, animated opacity
+        Raj eyes: emissive intensity pulse on eye material
+        All particles: dark purple/black wisps at screen edges
+
+────────────────────────────────────────────────────────────────────────────────
+17.3 SLOW MOTION EFFECT
+────────────────────────────────────────────────────────────────────────────────
+
+    timeScale = 1.0  ← global time scale
+    Every frame: deltaTime = rawDeltaTime * timeScale
+
+    For slow motion: timeScale = 0.15 to 0.30
+    Affects: character movement, physics, animations, particle systems
+    Does NOT affect: UI updates, audio (audio stays at normal pitch/speed)
+
+    function slowMotion(scale, duration) {
+        timeScale = scale
+        wait(duration)  ← real time duration
+        timeScale = 1.0
+    }
+
+    SLOW MOTION TRIGGERS:
+        Final hit of Rage Art → 0.15 scale, 0.6s real duration
+        KO hit (round ender)  → 0.20 scale, 0.4s real duration
+        Domain Expansion end  → 0.25 scale, 0.3s real duration
+
+────────────────────────────────────────────────────────────────────────────────
+17.4 SCREEN FLASH EFFECTS
+────────────────────────────────────────────────────────────────────────────────
+
+A fullscreen HTML div (#screen-flash) handles screen flashes:
+
+    function screenFlash(colour, opacity, duration) {
+        flashEl.style.background = colour
+        flashEl.style.opacity = opacity
+        flashEl.style.transition = "opacity 0s"
+        setTimeout(() => {
+            flashEl.style.transition = `opacity ${duration}s`
+            flashEl.style.opacity = 0
+        }, 16)  ← one frame delay, then fade out
+    }
+
+    FLASH EVENTS:
+        KO hit         : white, 0.8 opacity, 0.3s fade
+        9 CGPA impact  : golden, 0.5 opacity, 0.2s fade
+        Rage Art start : black, 0.6 opacity, 0.3s fade
+        Round start    : black to transparent (in from black)
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 18 — AI CONTROLLER (AIController.js)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+18.1 AI STATE MACHINE
+────────────────────────────────────────────────────────────────────────────────
+
+    AI_STATE_IDLE       → Standing, deciding next action
+    AI_STATE_APPROACH   → Moving toward player
+    AI_STATE_PRESSURE   → In attack range, executing moves
+    AI_STATE_DEFEND     → Blocking or backing off
+    AI_STATE_PUNISH     → Player just whiffed, AI punishes
+    AI_STATE_RECOVER    → After being hit, repositioning
+    AI_STATE_SPECIAL    → Executing special move (when mana full)
+    AI_STATE_RETREAT    → Low HP, backing off, building mana
+
+────────────────────────────────────────────────────────────────────────────────
+18.2 DIFFICULTY PARAMETERS
+────────────────────────────────────────────────────────────────────────────────
+
+    EASY:
+        reactionTime        : 600ms     ← delay before reacting to player action
+        blockChance         : 0.15      ← 15% chance to block when attacked
+        attackChance        : 0.30      ← 30% chance to attack per decision cycle
+        specialUseChance    : 0.05      ← rarely uses specials
+        retreatHPThreshold  : 0         ← never retreats
+        movementAccuracy    : 0.4       ← often moves wrong direction
+
+    MEDIUM:
+        reactionTime        : 300ms
+        blockChance         : 0.45
+        attackChance        : 0.55
+        specialUseChance    : 0.40
+        retreatHPThreshold  : 0.20
+        movementAccuracy    : 0.75
+
+    HARD:
+        reactionTime        : 100ms
+        blockChance         : 0.80
+        attackChance        : 0.85
+        specialUseChance    : 0.85
+        retreatHPThreshold  : 0.30
+        movementAccuracy    : 0.98
+
+────────────────────────────────────────────────────────────────────────────────
+18.3 AI DECISION CYCLE
+────────────────────────────────────────────────────────────────────────────────
+
+AI makes decisions every decisionInterval (0.3s to 0.8s based on difficulty).
+Between decisions: continues current action.
+
+    function AIDecide(ai, player) {
+        distance = getDistance(ai, player)
+        playerHP = player.currentHP
+        aiHP = ai.currentHP
+        aiMana = ai.currentMana
+        playerJustWhiffed = player.isInRecovery
+
+        // Priority 1: Punish player whiff
+        if (playerJustWhiffed && distance < attackRange) {
+            → AI_STATE_PUNISH
+            executeHeavyAttack()
+            return
+        }
+
+        // Priority 2: Retreat if low HP
+        if (aiHP < retreatHPThreshold && distance < safeDistance) {
+            → AI_STATE_RETREAT
+            dashBackward()
+            return
+        }
+
+        // Priority 3: Use special if mana full
+        if (aiMana >= 100 && Math.random() < specialUseChance) {
+            → AI_STATE_SPECIAL
+            useSpecialMove()
+            return
+        }
+
+        // Priority 4: Block if player attacking
+        if (player.isAttacking && Math.random() < blockChance) {
+            → AI_STATE_DEFEND
+            holdBlock()
+            return
+        }
+
+        // Priority 5: Approach and attack if far
+        if (distance > attackRange) {
+            → AI_STATE_APPROACH
+            moveTowardPlayer()
+            return
+        }
+
+        // Priority 6: Pressure with attacks
+        if (distance <= attackRange && Math.random() < attackChance) {
+            → AI_STATE_PRESSURE
+            selectAndExecuteAttack()
+            return
+        }
+
+        // Default: idle movement
+        → AI_STATE_IDLE
+        smallRandomMovement()
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+18.4 AI REACTION TIME IMPLEMENTATION
+────────────────────────────────────────────────────────────────────────────────
+
+AI doesn't react instantly — simulated reaction delay:
+
+    function AIReactToPlayerAttack(ai, player) {
+        // Register that player attacked
+        playerAttackDetected = true
+        detectionTime = Date.now()
+
+        // React after reactionTime milliseconds
+        setTimeout(() => {
+            if (playerAttackDetected && Math.random() < blockChance) {
+                ai.input.block = true
+            }
+        }, difficulty.reactionTime)
+    }
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 19 — MULTIPLAYER SYSTEM (NetworkManager.js)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+19.1 PARTYKIT CONNECTION
+────────────────────────────────────────────────────────────────────────────────
+
+Partykit.io provides a WebSocket room server.
+Each room = a match between two players.
+
+    // HOST (Player A):
+    const room = new PartySocket({
+        host: "YOUR_PARTYKIT_HOST",
+        room: generateRoomCode(),  ← 6 character random string
+    })
+
+    // JOINER (Player B):
+    const room = new PartySocket({
+        host: "YOUR_PARTYKIT_HOST",
+        room: enteredRoomCode,     ← code Player A shared
+    })
+
+────────────────────────────────────────────────────────────────────────────────
+19.2 MESSAGE TYPES
+────────────────────────────────────────────────────────────────────────────────
+
+All messages are JSON strings sent via room.send():
+
+    { type: "player_joined",    data: { playerIndex: 2 } }
+    { type: "char_selected",    data: { characterId: "harshita" } }
+    { type: "arena_selected",   data: { arenaId: "temple" } }
+    { type: "player_ready",     data: { playerIndex: 1 } }
+    { type: "input",            data: { ...inputState, frameNumber: 1234 } }
+    { type: "round_end_confirm",data: { winner: 1, round: 1 } }
+    { type: "rematch",          data: {} }
+    { type: "disconnect",       data: {} }
+
+────────────────────────────────────────────────────────────────────────────────
+19.3 INPUT SYNCHRONISATION
+────────────────────────────────────────────────────────────────────────────────
+
+Each frame, the local player's input is sent to the remote player.
+The remote player's input is received and applied to the remote character.
+
+    LOCAL PLAYER:
+        Every frame → room.send({ type: "input", data: localInputState })
+
+    REMOTE PLAYER:
+        room.onmessage = (event) => {
+            msg = JSON.parse(event.data)
+            if (msg.type === "input") {
+                remoteInput = msg.data
+                applyInputToCharacter(player2, remoteInput)
+            }
+        }
+
+    Both players run the same physics simulation locally.
+    Inputs keep both simulations in sync.
+    Small latency is acceptable for a friends-casual game.
+
+────────────────────────────────────────────────────────────────────────────────
+19.4 ROOM CODE GENERATION
+────────────────────────────────────────────────────────────────────────────────
+
+    function generateRoomCode() {
+        chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  ← no confusable chars
+        code = ""
+        for (i = 0; i < 6; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)]
+        }
+        return code  ← e.g. "FX7K2M"
+    }
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 20 — GAME LOOP (main.js)
+════════════════════════════════════════════════════════════════════════════════
+
+The game loop runs at 60 FPS using requestAnimationFrame.
+
+    let lastTime = 0
+
+    function gameLoop(timestamp) {
+        rawDeltaTime = (timestamp - lastTime) / 1000  ← in seconds
+        lastTime = timestamp
+
+        // Cap delta to prevent spiral of death on slow frames
+        rawDeltaTime = Math.min(rawDeltaTime, 0.033)  ← max 33ms
+
+        // Apply time scale (slow motion, etc.)
+        deltaTime = rawDeltaTime * timeScale
+
+        // Only update game systems during active combat
+        if (gameState === STATE_FIGHTING) {
+
+            // 1. Update input
+            InputManager.update()
+
+            // 2. Update physics world
+            physicsWorld.step()
+
+            // 3. Update characters
+            player1Controller.update(deltaTime, player1Input)
+            player2Controller.update(deltaTime, player2Input)
+
+            // 4. Check combat (hitboxes, hits)
+            CombatSystem.update(player1Controller, player2Controller)
+
+            // 5. Update animations
+            player1Controller.mixer.update(deltaTime)
+            player2Controller.mixer.update(deltaTime)
+
+            // 6. Update camera
+            CameraController.update(deltaTime)
+
+            // 7. Update timers (round timer, hitStun timers, etc.)
+            updateAllTimers(deltaTime)
+
+            // 8. Update visual effects (particles, shaders)
+            updateVisualEffects(deltaTime)
+
+            // 9. Update HUD
+            UIManager.updateHUD()
+
+            // 10. Send network inputs (multiplayer)
+            if (isMultiplayer) NetworkManager.sendInput()
+        }
+
+        // Always render
+        renderer.render(scene, camera)
+
+        requestAnimationFrame(gameLoop)
+    }
+
+    requestAnimationFrame(gameLoop)  ← start the loop
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 21 — PERFORMANCE TARGETS & OPTIMISATION
+════════════════════════════════════════════════════════════════════════════════
+
+TARGET HARDWARE     : Mid-range laptop (Intel i5, 8GB RAM, integrated graphics)
+TARGET FPS          : Stable 60 FPS at 1280x720 resolution
+FALLBACK FPS        : 30 FPS at 1024x600 on very low-end hardware
+
+OPTIMISATION RULES:
+    ─────────────────────────────────────────────────────────
+    1. MODELS:
+       Max polygon count per character : 15,000 triangles
+       Max polygon count per arena     : 30,000 triangles
+       Texture resolution per char     : 1024x1024 maximum
+       Texture format                  : WebP (better compression than PNG)
+       LOD (Level of Detail)           : Not needed at this scale
+
+    2. DRAW CALLS:
+       Merge static arena meshes into one draw call where possible
+       Character: max 3 draw calls (body, hair, accessory)
+       Arena: max 5 draw calls total
+
+    3. SHADOWS:
+       No real-time dynamic shadows (too expensive for integrated GPU)
+       Use baked shadow maps on arena floor (pre-rendered texture)
+       Character shadow: simple blob shadow (flat circle under character)
+
+    4. PHYSICS:
+       Run physics at 60Hz (matches render loop)
+       Only 2 character capsules + ground + 4 wall planes = minimal
+       Projectiles: simple AABB check, no physics body needed
+
+    5. PARTICLES:
+       Particle pool: 20 systems max active simultaneously
+       Max 40 particles per system
+       Particles are THREE.Points (one draw call per system)
+
+    6. RENDERER SETTINGS:
+       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+       → Caps at 2x for retina, prevents 3x on high-DPI phones
+       renderer.shadowMap.enabled = false
+       renderer.antialias = true (acceptable cost for quality)
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 22 — HOW TO GIVE THIS DOCUMENT TO CLAUDE CODE
+════════════════════════════════════════════════════════════════════════════════
+
+1. Open claude.ai or Claude Code in terminal
+2. Paste THIS ENTIRE DOCUMENT
+3. Also paste FRACTURE_Master_GDD_v1.0.txt (the other document)
+4. Add at the end:
+
+    "Using these two documents as your complete specification,
+     build Phase 1:
+     - Create index.html with Three.js loaded via CDN
+     - Create a basic Three.js scene with floor plane and ambient lighting
+     - Load a placeholder box as a character (we will replace with GLB later)
+     - Implement WASD movement in 3D space using CharacterController.js
+     - Implement jump (Space) and double jump
+     - Implement dash forward/back (double tap W/S)
+     - Implement crouch (Ctrl hold)
+     - Camera follows character using the tracking logic in Section 15
+     - Arena boundary prevents character leaving 10m radius
+     - Display a simple health bar and mana bar in HTML overlay
+     - 60 FPS game loop as described in Section 20
+     Do not add combat yet. Movement and scene only."
+
+5. Save all generated files to your project folder
+6. Open index.html in Chrome — test it
+7. Report any bugs: "X is broken, Y is happening instead of Z"
+8. When working: move to Phase 2
+
+
+================================================================================
+END OF DOCUMENT — FRACTURE CORE ENGINE LOGIC v1.0
+================================================================================
+All implementations use 100% free, browser-native technologies.
+No paid libraries. No subscriptions. No server costs.
+Total cost to implement: ₹0
+================================================================================

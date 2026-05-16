@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choose Your Champion</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#c9a84c; --gold-light:#f0d080; --gold-dim:#7a5f20;
+  --bg:#050608; --border:rgba(201,168,76,0.28);
+  --text:#e8dcc8; --text-dim:#9a8a6a;
+  --ease:0.7s cubic-bezier(0.77,0,0.18,1);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  color:var(--text);font-family:'Rajdhani',sans-serif;user-select:none}
+
+/* ══ PARTICLES ══ */
+#atmo{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.petal{position:absolute;border-radius:50% 0 50% 0;opacity:0;animation:drift linear infinite}
+@keyframes drift{
+  0%  {transform:translateY(110vh) translateX(0) rotate(0deg);opacity:0}
+  8%  {opacity:.4} 88%{opacity:.15}
+  100%{transform:translateY(-8vh) translateX(var(--dx)) rotate(720deg);opacity:0}
+}
+
+/* ══ TOP BAR ══ */
+#topbar{position:fixed;top:0;left:0;right:0;z-index:50;padding:18px 52px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(to bottom,rgba(5,6,8,.97) 0%,transparent 100%)}
+#top-title{font-family:'Cinzel Decorative',serif;font-size:clamp(.62rem,1vw,.82rem);
+  color:var(--gold);letter-spacing:.5em;text-transform:uppercase;
+  text-shadow:0 0 22px rgba(201,168,76,.4)}
+.top-dots{display:flex;gap:12px;align-items:center}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--gold-dim);
+  border:1px solid var(--gold);cursor:pointer;transition:all .4s}
+.dot.on{background:var(--gold);box-shadow:0 0 14px var(--gold);transform:scale(1.4)}
+#top-back{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text-dim);
+  letter-spacing:.2em;cursor:pointer;border:1px solid var(--border);padding:7px 20px;
+  border-radius:2px;transition:all .3s}
+#top-back:hover{color:var(--gold);border-color:var(--gold)}
+
+/* ══ BOTTOM BAR ══ */
+#botbar{position:fixed;bottom:0;left:0;right:0;z-index:50;padding:14px 52px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(to top,rgba(5,6,8,.98) 0%,transparent 100%)}
+.hint{font-family:'Share Tech Mono',monospace;font-size:.58rem;
+  color:var(--text-dim);letter-spacing:.18em}
+#counter{font-family:'Cinzel',serif;font-size:.72rem;
+  color:var(--gold-dim);letter-spacing:.35em}
+#counter span{color:var(--gold)}
+
+/* ══ NAV ARROWS ══ */
+.arrow{position:fixed;top:50%;z-index:60;transform:translateY(-50%);
+  width:54px;height:54px;border:1px solid var(--gold-dim);
+  background:rgba(5,6,8,.8);color:var(--gold);font-size:1.1rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  clip-path:polygon(20% 0%,80% 0%,100% 20%,100% 80%,80% 100%,20% 100%,0% 80%,0% 20%);
+  transition:all .3s;backdrop-filter:blur(10px)}
+.arrow:hover{background:rgba(201,168,76,.18);border-color:var(--gold);
+  box-shadow:0 0 28px rgba(201,168,76,.35);transform:translateY(-50%) scale(1.1)}
+.arrow:active{transform:translateY(-50%) scale(.94)}
+.arrow.off{opacity:.15;pointer-events:none}
+#al{left:14px} #ar{right:14px}
+
+/* ══ CAROUSEL ══ */
+#viewport{position:fixed;inset:0;z-index:10;overflow:hidden}
+#track{display:flex;width:400%;height:100%;transition:transform var(--ease)}
+
+/* ══ FULL SCREEN HERO CARD ══ */
+.hcard{
+  width:25%;height:100%;position:relative;display:flex;flex-shrink:0;overflow:hidden;
+}
+
+/* ── LEFT 50%: ART ── */
+.art{width:50%;height:100%;position:relative;flex-shrink:0;overflow:hidden}
+.art img{width:100%;height:100%;object-fit:cover;object-position:center top;
+  filter:saturate(.82) brightness(.78) contrast(1.06);transition:filter 1s,transform 1.4s}
+.hcard.active .art img{filter:saturate(1.08) brightness(.95) contrast(1.06);transform:scale(1.04)}
+.art-vign{position:absolute;inset:0;z-index:1;
+  background:
+    linear-gradient(to right,transparent 40%,rgba(5,6,8,.99) 100%),
+    linear-gradient(to top,rgba(5,6,8,.85) 0%,transparent 22%),
+    linear-gradient(to bottom,rgba(5,6,8,.55) 0%,transparent 16%)}
+.art-scanlines{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .6s;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px)}
+.hcard.active .art-scanlines{opacity:1}
+/* Archetype strip — sits at the very bottom of art, well below the face */
+.art-archetype{position:absolute;bottom:70px;left:0;right:0;z-index:3;
+  display:flex;align-items:center;gap:10px;padding:10px 22px;
+  background:linear-gradient(to right,rgba(5,6,8,.85) 0%,rgba(5,6,8,.4) 70%,transparent 100%);
+  opacity:0;transform:translateY(8px);transition:all .55s .2s}
+.hcard.active .art-archetype{opacity:1;transform:translateY(0)}
+.arch-label{font-family:'Share Tech Mono',monospace;font-size:.6rem;
+  letter-spacing:.28em;color:var(--gold-light);text-transform:uppercase}
+.arch-sep{color:var(--gold-dim);font-size:.7rem}
+.arch-style{font-family:'Share Tech Mono',monospace;font-size:.56rem;
+  letter-spacing:.22em;color:var(--text-dim);text-transform:uppercase}
+.art-edge{position:absolute;inset:0;z-index:4;pointer-events:none;
+  transition:box-shadow .7s;box-shadow:inset 0 0 0 1px rgba(201,168,76,.1)}
+.hcard.active .art-edge{box-shadow:inset 0 0 0 1px rgba(201,168,76,.5),
+  inset 0 0 80px rgba(201,168,76,.07)}
+/* ── RIGHT 50%: INFO ── */
+.info{width:50%;height:100%;position:relative;display:flex;flex-direction:column;
+  justify-content:center;padding:100px 60px 80px 44px;
+  background:linear-gradient(135deg,rgba(6,8,12,.99) 0%,rgba(10,12,18,.97) 100%);
+  border-left:1px solid var(--border);overflow:hidden}
+.info::before{content:attr(data-l);position:absolute;bottom:-.05em;right:-.02em;
+  font-family:'Cinzel Decorative',serif;font-size:16rem;font-weight:900;
+  color:rgba(201,168,76,.022);line-height:1;pointer-events:none;letter-spacing:-.05em}
+.info::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.3}
+
+/* Info elements */
+.hnum{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text-dim);
+  letter-spacing:.42em;margin-bottom:9px;position:relative;z-index:1;
+  opacity:0;transform:translateY(-10px);transition:all .5s .08s}
+.hcard.active .hnum{opacity:1;transform:translateY(0)}
+
+.hname{font-family:'Cinzel Decorative',serif;font-size:clamp(1.9rem,3.2vw,2.9rem);
+  font-weight:700;color:#fff;line-height:1;letter-spacing:.04em;margin-bottom:5px;
+  position:relative;z-index:1;text-shadow:0 2px 28px rgba(201,168,76,.18);
+  opacity:0;transform:translateY(18px);transition:all .58s .14s}
+.hcard.active .hname{opacity:1;transform:translateY(0)}
+
+.halias{font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold);
+  letter-spacing:.4em;text-transform:uppercase;margin-bottom:22px;
+  position:relative;z-index:1;opacity:0;transition:opacity .5s .22s}
+.hcard.active .halias{opacity:1}
+
+.hdiv{display:flex;align-items:center;gap:12px;margin-bottom:24px;
+  position:relative;z-index:1;opacity:0;transition:opacity .5s .28s}
+.hcard.active .hdiv{opacity:1}
+.gem{width:9px;height:9px;background:var(--gold);flex-shrink:0;
+  clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);box-shadow:0 0 12px var(--gold)}
+.dline{height:1px;flex:1;background:linear-gradient(90deg,var(--gold),transparent)}
+
+/* Description area */
+.desc-wrap{position:relative;z-index:1;margin-bottom:20px;
+  opacity:0;transform:translateY(12px);transition:all .58s .3s}
+.hcard.active .desc-wrap{opacity:1;transform:translateY(0)}
+
+.desc-short{font-size:clamp(.85rem,1.15vw,.98rem);line-height:1.82;
+  color:var(--text);margin-bottom:18px;font-weight:400}
+
+.lore-quote{border-left:2px solid var(--gold-dim);padding:13px 18px;margin-bottom:16px;
+  background:rgba(201,168,76,.045);font-family:'Cinzel',serif;font-size:.74rem;
+  color:rgba(232,220,200,.72);line-height:1.88;font-style:italic;letter-spacing:.03em}
+
+.rmb{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--gold);
+  letter-spacing:.25em;text-transform:uppercase;background:none;border:none;
+  cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:8px;transition:color .3s}
+.rmb::after{content:'▼';font-size:.45rem;transition:transform .35s}
+.rmb.open::after{transform:rotate(180deg)}
+.rmb:hover{color:var(--gold-light)}
+
+.lore-full{max-height:0;overflow-y:auto;overflow-x:hidden;
+  transition:max-height .7s cubic-bezier(.23,1,.32,1),margin .4s;
+  font-size:.8rem;line-height:1.85;color:var(--text-dim);
+  padding-right:8px;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent;margin-bottom:0}
+.lore-full.open{max-height:190px;margin-top:14px;margin-bottom:16px}
+.lore-full::-webkit-scrollbar{width:3px}
+.lore-full::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:2px}
+
+/* Abilities */
+.abilities{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:24px;
+  position:relative;z-index:1;opacity:0;transition:opacity .5s .4s}
+.hcard.active .abilities{opacity:1}
+.atag{font-family:'Share Tech Mono',monospace;font-size:.54rem;letter-spacing:.16em;
+  text-transform:uppercase;padding:5px 11px;border:1px solid var(--gold-dim);
+  color:var(--gold-dim);border-radius:1px;background:rgba(201,168,76,.04);transition:all .3s}
+.atag:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(201,168,76,.1)}
+
+/* Buttons */
+.actions{display:flex;gap:12px;position:relative;z-index:1;
+  opacity:0;transform:translateY(12px);transition:all .52s .46s}
+.hcard.active .actions{opacity:1;transform:translateY(0)}
+.btn{font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.28em;
+  text-transform:uppercase;cursor:pointer;border-radius:1px;transition:all .3s;
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%)}
+.btn-prev{flex:1;font-size:.78rem;padding:13px 0;background:transparent;
+  border:1px solid var(--gold-dim);color:var(--gold)}
+.btn-prev:hover{background:rgba(201,168,76,.1);border-color:var(--gold);box-shadow:0 0 22px rgba(201,168,76,.18)}
+.btn-sel{flex:1.5;font-size:.84rem;font-weight:700;padding:13px 0;border:none;color:#0a0800;
+  background:linear-gradient(135deg,#7a5500,#c9a84c,#f0d080,#c9a84c,#7a5500);
+  background-size:200% 100%;animation:shine 2.8s linear infinite}
+@keyframes shine{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.btn-sel:hover{box-shadow:0 0 34px rgba(201,168,76,.55),0 0 70px rgba(201,168,76,.22);transform:translateY(-2px)}
+.btn-sel:active{transform:translateY(0)}
+
+/* ══ PREVIEW MODAL ══ */
+#modal{position:fixed;inset:0;z-index:100;background:rgba(4,5,8,.9);
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(16px);opacity:0;transition:opacity .45s}
+#modal.open{display:flex}
+#mbox{width:min(700px,90vw);border:1px solid var(--gold-dim);
+  background:rgba(7,9,13,.99);padding:38px;position:relative;
+  clip-path:polygon(22px 0%,100% 0%,100% calc(100% - 22px),calc(100% - 22px) 100%,0% 100%,0% 22px)}
+#mbox::before{content:'';position:absolute;top:0;left:22px;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+#m-name{font-family:'Cinzel Decorative',serif;font-size:1.35rem;color:var(--gold);margin-bottom:3px}
+#m-class{font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text-dim);
+  letter-spacing:.3em;text-transform:uppercase;margin-bottom:20px}
+#m-close{position:absolute;top:15px;right:18px;background:none;border:1px solid var(--gold-dim);
+  color:var(--gold);font-size:.95rem;width:32px;height:32px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .3s;border-radius:1px}
+#m-close:hover{background:rgba(201,168,76,.15);border-color:var(--gold)}
+
+#m-canvas-wrap{width:100%;height:360px;position:relative;border:1px solid rgba(201,168,76,.12);
+  margin-bottom:14px;overflow:hidden;
+  background:radial-gradient(ellipse at center,rgba(201,168,76,.07) 0%,rgba(5,6,8,.95) 70%)}
+#m-canvas{width:100%;height:100%;display:block}
+#m-loading{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:5;background:rgba(5,6,8,.78);transition:opacity .5s}
+#m-loading.hide{opacity:0;pointer-events:none}
+.spinner{width:42px;height:42px;border:2px solid var(--gold-dim);border-top-color:var(--gold);
+  border-radius:50%;animation:spin .85s linear infinite;margin-bottom:14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#m-loading p{font-family:'Share Tech Mono',monospace;font-size:.6rem;
+  color:var(--text-dim);letter-spacing:.25em;text-transform:uppercase}
+#m-hint{font-family:'Share Tech Mono',monospace;font-size:.54rem;color:var(--text-dim);
+  letter-spacing:.18em;text-align:center;margin-bottom:18px;text-transform:uppercase}
+#m-actions{display:flex;gap:12px}
+.mab{flex:1;padding:11px 0;font-family:'Rajdhani',sans-serif;font-size:.76rem;
+  font-weight:600;letter-spacing:.25em;text-transform:uppercase;cursor:pointer;transition:all .3s;border-radius:1px}
+.mab-close{background:transparent;border:1px solid var(--gold-dim);color:var(--gold-dim)}
+.mab-close:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.07)}
+.mab-sel{background:linear-gradient(135deg,#7a5500,#c9a84c);border:none;color:#0a0800;font-weight:700}
+.mab-sel:hover{box-shadow:0 0 24px rgba(201,168,76,.45)}
+
+/* ══ TOAST ══ */
+#toast{position:fixed;bottom:62px;left:50%;transform:translateX(-50%) translateY(20px);z-index:200;
+  background:rgba(7,9,13,.98);border:1px solid var(--gold);padding:14px 42px;
+  font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.32em;color:var(--gold);
+  text-transform:uppercase;opacity:0;transition:all .5s;pointer-events:none;
+  box-shadow:0 0 44px rgba(201,168,76,.22);
+  clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#flash{position:fixed;inset:0;z-index:80;background:rgba(201,168,76,.08);
+  pointer-events:none;opacity:0;transition:opacity .15s}
+</style>
+</head>
+<body>
+
+<div id="atmo"></div>
+<div id="flash"></div>
+
+<nav id="topbar">
+  <div id="top-title">⚔ Choose Your Champion</div>
+  <div class="top-dots" id="dots"></div>
+  <div id="top-back">◀ Back to Menu</div>
+</nav>
+
+<div id="botbar">
+  <div class="hint">← → Navigate Heroes</div>
+  <div id="counter">HERO <span id="cc">1</span> of <span id="ct">4</span></div>
+  <div class="hint">Keyboard ← → also works</div>
+</div>
+
+<button class="arrow off" id="al" onclick="navigate(-1)">&#9664;</button>
+<button class="arrow"     id="ar" onclick="navigate(1)">&#9654;</button>
+
+<div id="viewport">
+  <div id="track"></div>
+</div>
+
+<div id="modal">
+  <div id="mbox">
+    <button id="m-close" onclick="closeModal()">✕</button>
+    <div id="m-name">—</div>
+    <div id="m-class">—</div>
+    <div id="m-canvas-wrap">
+      <canvas id="m-canvas"></canvas>
+      <div id="m-loading">
+        <div class="spinner"></div>
+        <p id="m-load-txt">Loading 3D Model…</p>
+      </div>
+    </div>
+    <div id="m-hint">🖱 Drag to rotate · Scroll to zoom · Right-drag to pan</div>
+    <div id="m-actions">
+      <button class="mab mab-close" onclick="closeModal()">Close</button>
+      <button class="mab mab-sel" id="m-sel">Select Hero</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ══ HERO DATA ══ */
+const HEROES=[
+  {
+    id:0, name:"Harshita", alias:"The Iron Will",
+    archetype:"Disciplined Striker", style:"Rushdown",
+    img:"harshita_walpaper.jpg", glb:"harshita_animation.glb", bgL:"H",
+    abilities:["Leetcode Swarm","Tornado Kick","Iron Discipline","Relentless Cadence"],
+    short:"She did not find fighting through tragedy. She found it through obsession. A single sparring session at twelve ignited something no classroom ever could — and she has never stopped training since.",
+    quote:'"She does not trash talk. She does not celebrate. She simply fights — and then goes home and trains harder."',
+    lore:"Harshita was born into a warm, grounded family that valued integrity above everything else. Neither wealthy nor struggling, her household ran on mutual respect, hard work, and quiet dignity. From a young age, she carried those values like armour — not because she was told to, but because she genuinely believed in them.\n\nBy the time the FRACTURE tournament was announced, Harshita had already defeated fighters twice her age, twice her size, and ten times their arrogance. She entered not to prove herself to the world, but to test the absolute ceiling of what relentless dedication can produce.\n\nFighting Style: Precise Muay Thai blended with disciplined footwork. Every move is intentional. No wasted motion. Her combinations feel like mathematical sequences — clean, calculated, inevitable.\n\nSpecial I — Leetcode Swarm (Full Mana): A storm of glowing symbols — + − $ % / * — each a razor-edged projectile flying in rapid succession. What looks like chaos is a precisely calculated pattern.\n\nSpecial II — Tornado Kick (Half Mana): A spinning heel kick so fast it generates a visible vortex of force. Launches the opponent upward for a juggle follow-up."
+  },
+  {
+    id:1, name:"Harshita·S", alias:"The Applied Mind",
+    archetype:"Technical Counter-Fighter", style:"Knowledge Weaponised",
+    img:"harshita_s_walpaper.jpg", glb:"harshita_s_animation.glb", bgL:"S",
+    abilities:["9 CGPA","Tornado Kick Mk.II","Bait & Punish","Revenue Model"],
+    short:"She studied the science of violence so thoroughly, she turned it into art — and then she monetised it. She entered the arena with a 9 CGPA, a fight plan, and a projected revenue model for the next three years.",
+    quote:'"The arena is her laboratory. Every opponent is a problem to be solved — and every solved problem pays."',
+    lore:"Born into a family of academics with considerable social standing, Harshita·S was raised in an environment saturated with books, theories, and intellectual debate. She graduated with a 9 CGPA, consistently the highest in every room she entered.\n\nShe dissected fight footage like a surgeon. She studied biomechanics, opponent psychology, pressure points, and reaction timing. She trained not to feel strong, but to be correct — and in her world, being correct is far more dangerous than being powerful.\n\nUnlike Harshita, whose motivation is purely internal, Harshita·S saw something others missed — the FRACTURE tournament is not just a competition. It is an opportunity. She did the math. The return on investment was undeniable.\n\nFighting Style: Counter-based Krav Maga with scientific precision. She rarely initiates — she reads, baits, and punishes. Her defensive game is suffocating.\n\nSpecial I — 9 CGPA (Full Mana): A glowing golden aura surrounds her as she draws a massive luminous 9 in the air. It solidifies, rotates, and launches at the opponent like a physical wall.\n\nSpecial II — Tornado Kick Mk.II (Half Mana): Technically refined version — faster startup, with a disorienting spin that scrambles the opponent's controls for 1 second after landing."
+  },
+  {
+    id:2, name:"Debojeet", alias:"The Immovable",
+    archetype:"Grappler", style:"Raw Power · Juggernaut",
+    img:"debojeet_walpaper.jpg", glb:"debojeet_animation.glb", bgL:"D",
+    abilities:["Inferno Fist","Iron Redirect","Ground & Pound","Marrow Strength"],
+    short:"He left everything behind at fifteen. What remained was stronger than anything he left. He spent years sleeping on hard floors, training until his body gave out — then training again the next morning.",
+    quote:'"He fights because he has nothing left to prove — and that is precisely what makes him so dangerous."',
+    lore:"Debojeet grew up in a stable, loving household — the kind of home most people would have stayed in forever. He did not leave out of pain or rebellion. He left because something deep and wordless inside him demanded more than comfort could offer.\n\nAt fifteen, he walked out with nothing but the clothes on his back and an obsession that had consumed him since childhood — the pursuit of pure, uncompromised physical strength. Not the strength of machines or supplements, but the kind that lives in the marrow.\n\nHe spent years training under judo masters across remote regions. He never complained. Complaint, to Debojeet, is just wasted energy. His physique is the autobiography of that journey. Every scar, every callus tells a story he never bothers to speak aloud.\n\nFighting Style: Judo-dominant grappling with devastating ground-and-pound. He lets opponents come to him, absorbs their energy, and redirects it catastrophically. Slow to start. Terrifying when he closes distance.\n\nSpecial — Inferno Fist (Full Mana): Debojeet plants his feet and draws a slow, deliberate breath. His fist glows — not flashy, just a deep burning orange growing steadily hotter. He releases it as a dense, concentrated fireball that travels forward in a straight line with tremendous force. It does not curve. It does not spread. It simply arrives, and it is enough."
+  },
+  {
+    id:3, name:"Ryomen Raj", alias:"The Unbound",
+    archetype:"Chaos Sovereign", style:"Secret Arts · Laws Don't Apply",
+    img:"ryoumen_walpaper.jpg", glb:"ryoumen_animation.glb", bgL:"R",
+    abilities:["The Unknown","Cursed Absorption","Secret Arts","Unbounded"],
+    short:"He didn't chase power. He simply never threw away what everyone else was too proud to keep. He absorbed every curse, every dismissive glance — not with bitterness, but with a quiet, terrifying patience.",
+    quote:'"He arrived late to registration, snack in hand, mildly confused about the schedule. He yawned during the opening ceremony. Then the first round began — and nobody said a word for a very long time afterward."',
+    lore:"Ryomen Raj's origins are, by design or by nature, unclear. There are fragments — suggestions of a family somewhere, a home that may or may not have held him once. He does not seem particularly interested in revisiting either.\n\nWhat defines Raj is not where he came from but how he moves through the world — entirely on his own terms, unbound by any law or expectation he did not personally agree to. The people around him called him worthless. Directionless. Cursed. They poured their frustration and contempt into him like he was a vessel built to receive it.\n\nHe never argued. He never left. He simply collected it all — because Ryomen Raj understood something none of them ever did: emotion is energy. Resentment, hatred, despair — it all carries weight. And weight, in the right hands, becomes power.\n\nHe absorbed every curse whispered in his direction, every slammed door — not with bitterness, but with a quiet, terrifying patience. Over time it became something no discipline or master could manufacture: a raw, boundless, deeply personal power source that answers only to him.\n\nSpecial — The Unknown (Full Mana): Classified. Even he isn't entirely sure what it will do. That's part of the problem."
+  }
+];
+
+/* ══ RENDER ══ */
+function buildCard(h){
+  const abs=h.abilities.map(a=>`<span class="atag">${a}</span>`).join('');
+  const loreHTML=h.lore.replace(/\n/g,'<br><br>');
+  return `<div class="hcard" id="c${h.id}">
+    <div class="art">
+      <img src="${h.img}" alt="${h.name}" loading="eager">
+      <div class="art-vign"></div><div class="art-scanlines"></div>
+      <div class="art-edge"></div>
+      <div class="art-archetype">
+        <span class="arch-label">${h.archetype}</span>
+        <span class="arch-sep">·</span>
+        <span class="arch-style">${h.style}</span>
+      </div>
+    </div>
+    <div class="info" data-l="${h.bgL}">
+      <div class="hnum">HERO // ${String(h.id+1).padStart(2,'0')}</div>
+      <div class="hname">${h.name}</div>
+      <div class="halias">${h.alias}</div>
+      <div class="hdiv"><div class="gem"></div><div class="dline"></div></div>
+      <div class="desc-wrap">
+        <p class="desc-short">${h.short}</p>
+        <div class="lore-quote">${h.quote}</div>
+        <button class="rmb" id="rmb${h.id}" onclick="toggleLore(event,${h.id})">Read Full Lore</button>
+        <div class="lore-full" id="lore${h.id}">${loreHTML}</div>
+      </div>
+      <div class="abilities">${abs}</div>
+      <div class="actions">
+        <button class="btn btn-prev" onclick="openModal(event,${h.id})">⬡ Preview 3D</button>
+        <button class="btn btn-sel"  onclick="selectHero(event,${h.id})">Select →</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAll(){
+  document.getElementById('track').innerHTML=HEROES.map(buildCard).join('');
+  document.getElementById('ct').textContent=HEROES.length;
+  // Build dots
+  const dotsEl=document.getElementById('dots');
+  dotsEl.innerHTML=HEROES.map((_,i)=>
+    `<div class="dot${i===0?' on':''}" onclick="goTo(${i})"></div>`).join('');
+}
+
+/* ══ NAV ══ */
+let cur=0;
+function goTo(i,skipFlash){
+  if(i<0||i>=HEROES.length) return;
+  const old=document.getElementById(`c${cur}`);
+  if(old) old.classList.remove('active');
+  cur=i;
+  document.getElementById('track').style.transform=`translateX(-${i*25}%)`;
+  const el=document.getElementById(`c${cur}`);
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.dot').forEach((d,idx)=>d.classList.toggle('on',idx===i));
+  document.getElementById('al').classList.toggle('off',i===0);
+  document.getElementById('ar').classList.toggle('off',i===HEROES.length-1);
+  document.getElementById('cc').textContent=i+1;
+  if(!skipFlash){const f=document.getElementById('flash');f.style.opacity='1';setTimeout(()=>f.style.opacity='0',130);}
+}
+function navigate(d){goTo(cur+d);}
+
+/* ══ LORE ══ */
+function toggleLore(e,id){
+  e.stopPropagation();
+  const l=document.getElementById(`lore${id}`),b=document.getElementById(`rmb${id}`);
+  const open=l.classList.toggle('open');
+  b.classList.toggle('open',open);
+  b.childNodes[0].textContent=open?'Close Lore ':'Read Full Lore ';
+}
+
+/* ══ SELECT ══ */
+function selectHero(e,id){
+  if(e) e.stopPropagation();
+  const h=HEROES[id];
+  const t=document.getElementById('toast');
+  t.textContent=`${h.name} — Selected for Combat`;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);
+  console.log(`✅ Hero: ${h.name} | GLB: ${h.glb}`);
+}
+
+/* ══ THREE.JS VIEWER ══ */
+let threeCtx=null;
+
+function buildScene(){
+  const canvas=document.getElementById('m-canvas');
+  const wrap=document.getElementById('m-canvas-wrap');
+  const W=wrap.clientWidth,H=wrap.clientHeight;
+
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(W,H);
+  renderer.outputEncoding=THREE.sRGBEncoding;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.3;
+  renderer.shadowMap.enabled=true;
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(42,W/H,0.01,100);
+  camera.position.set(0,1.2,3.5);
+
+  scene.add(new THREE.AmbientLight(0xffeedd,0.65));
+  const key=new THREE.DirectionalLight(0xffd580,2);key.position.set(2,5,3);key.castShadow=true;scene.add(key);
+  const fill=new THREE.DirectionalLight(0x8899ff,0.55);fill.position.set(-3,1,-2);scene.add(fill);
+  const rim=new THREE.DirectionalLight(0xffd700,1.1);rim.position.set(0,3,-3);scene.add(rim);
+
+  const grid=new THREE.GridHelper(5,24,0xc9a84c,0x2a2010);
+  grid.material.opacity=0.22;grid.material.transparent=true;scene.add(grid);
+
+  const controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;controls.dampingFactor=0.07;
+  controls.minDistance=0.5;controls.maxDistance=10;
+  controls.target.set(0,0.9,0);controls.update();
+
+  const clock=new THREE.Clock();
+  let mixer=null,model=null,animId=null;
+
+  function animate(){
+    animId=requestAnimationFrame(animate);
+    if(mixer) mixer.update(clock.getDelta());
+    controls.update();
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  function dispose(){
+    cancelAnimationFrame(animId);controls.dispose();renderer.dispose();
+    scene.traverse(o=>{
+      if(o.geometry) o.geometry.dispose();
+      if(o.material) [].concat(o.material).forEach(m=>{
+        Object.values(m).forEach(v=>{if(v&&v.isTexture)v.dispose();});m.dispose();});
+    });
+  }
+
+  function loadGLB(url){
+    if(model){scene.remove(model);model=null;}
+    if(mixer){mixer.stopAllAction();mixer=null;}
+    const loadEl=document.getElementById('m-loading');
+    const loadTxt=document.getElementById('m-load-txt');
+    loadEl.innerHTML='<div class="spinner"></div><p id="m-load-txt">Loading 3D Model…</p>';
+    loadEl.classList.remove('hide');
+
+    const loader=new THREE.GLTFLoader();
+    loader.load(url,
+      gltf=>{
+        model=gltf.scene;
+        const box=new THREE.Box3().setFromObject(model);
+        const sz=new THREE.Vector3();box.getSize(sz);
+        const cen=new THREE.Vector3();box.getCenter(cen);
+        const s=2.2/Math.max(sz.x,sz.y,sz.z);
+        model.scale.setScalar(s);
+        model.position.sub(cen.multiplyScalar(s));
+        model.position.y=0;
+        model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+        scene.add(model);
+        if(gltf.animations&&gltf.animations.length){
+          mixer=new THREE.AnimationMixer(model);
+          mixer.clipAction(gltf.animations[0]).play();
+        }
+        const b2=new THREE.Box3().setFromObject(model);
+        const c2=new THREE.Vector3();b2.getCenter(c2);
+        const s2=new THREE.Vector3();b2.getSize(s2);
+        controls.target.copy(c2);
+        camera.position.set(c2.x,c2.y+s2.y*.25,c2.z+s2.y*1.7);
+        controls.update();
+        document.getElementById('m-loading').classList.add('hide');
+      },
+      xhr=>{
+        if(xhr.total>0){
+          const p=Math.round(xhr.loaded/xhr.total*100);
+          const t=document.getElementById('m-load-txt');
+          if(t) t.textContent=`Loading… ${p}%`;
+        }
+      },
+      err=>{
+        console.error(err);
+        document.getElementById('m-loading').innerHTML=
+          `<p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#e74c3c;
+          letter-spacing:.2em;text-align:center;line-height:2;padding:0 24px">
+          MODEL LOAD FAILED<br><br>Ensure .glb file is in same folder as index.html<br>
+          and you are running via local server (not file://)</p>`;
+      }
+    );
+  }
+  return{loadGLB,dispose};
+}
+
+/* ══ MODAL ══ */
+function openModal(e,id){
+  if(e) e.stopPropagation();
+  const h=HEROES[id];
+  document.getElementById('m-name').textContent=h.name;
+  document.getElementById('m-class').textContent=h.cls;
+  document.getElementById('m-sel').onclick=()=>{closeModal();selectHero(null,id);};
+  const modal=document.getElementById('modal');
+  modal.style.display='flex';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{modal.style.opacity='1';}));
+  if(threeCtx){threeCtx.dispose();threeCtx=null;}
+  function start(){threeCtx=buildScene();threeCtx.loadGLB(h.glb);}
+  if(window.__threeReady) setTimeout(start,100);
+  else window.__threeReadyCb=()=>setTimeout(start,100);
+}
+function closeModal(){
+  const modal=document.getElementById('modal');
+  modal.style.opacity='0';
+  setTimeout(()=>{modal.style.display='none';if(threeCtx){threeCtx.dispose();threeCtx=null;}},440);
+}
+
+/* ══ PARTICLES ══ */
+function spawnParticles(){
+  const c=document.getElementById('atmo');
+  for(let i=0;i<26;i++){
+    const p=document.createElement('div');p.className='petal';
+    p.style.left=(Math.random()*100)+'vw';
+    p.style.setProperty('--dx',(Math.random()*180-90)+'px');
+    const d=8+Math.random()*18;p.style.animationDuration=d+'s';p.style.animationDelay=-(Math.random()*d)+'s';
+    const s=3+Math.random()*5;p.style.width=s+'px';p.style.height=s+'px';
+    const r=195+~~(Math.random()*60),g=155+~~(Math.random()*50),b=30+~~(Math.random()*40);
+    p.style.background=`rgba(${r},${g},${b},1)`;
+    c.appendChild(p);
+  }
+}
+
+/* ══ KEYBOARD ══ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft') navigate(-1);
+  if(e.key==='ArrowRight') navigate(1);
+  if(e.key==='Escape') closeModal();
+});
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+/* ══ THREE.JS SEQUENTIAL LOAD (no race condition) ══ */
+(function(){
+  function loadScript(src,cb){var s=document.createElement('script');s.src=src;s.onload=cb;document.head.appendChild(s);}
+  var base='https://cdn.jsdelivr.net/npm/three@0.158.0/';
+  loadScript(base+'build/three.min.js',function(){
+    loadScript(base+'examples/js/loaders/GLTFLoader.js',function(){
+      loadScript(base+'examples/js/controls/OrbitControls.js',function(){
+        window.__threeReady=true;
+        if(window.__threeReadyCb) window.__threeReadyCb();
+      });
+    });
+  });
+})();
+
+/* ══ INIT ══ */
+renderAll();
+spawnParticles();
+goTo(0,true);
+</script>
+</body>
+</html>

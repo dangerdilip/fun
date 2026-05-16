@@ -1,0 +1,8 @@
+node_modules/
+.gemini/
+fun_backups/
+backups_assets/
+.DS_Store
+Thumbs.db
+*.fbx
+*.zip

@@ -1,0 +1,1398 @@
+================================================================================
+        FRACTURE — MASTER GAME DESIGN DOCUMENT v1.0
+        The Complete Blueprint | All Free Stack | High Quality
+================================================================================
+        Last Updated  : May 2026
+        Built With    : 100% Free Tools — Zero Cost Forever
+        Platform      : Browser-Based (No Download Needed for Players)
+        Genre         : 3D Online 1v1 Fighting Game
+        Inspiration   : Tekken + Shadow Fight Arena + Street Fighter
+================================================================================
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 1 — PROJECT IDENTITY
+════════════════════════════════════════════════════════════════════════════════
+
+WORKING TITLE       : FRACTURE
+                      (Final name shortlist: Fracture / Sovereign / Ironbound)
+
+TAGLINE             : "Every fighter has a pattern. Find it. Break it."
+
+CONCEPT             : A 1v1 browser-based 3D fighting game where two players
+                      move freely in a bounded arena and fight using light,
+                      medium, heavy and combo attacks fuelled by a mana system.
+                      Select characters carry Rage Arts activated near death.
+                      Movement is fully 3D — walk, dash, jump, double jump,
+                      crouch. Combat is weighty, deliberate and impactful.
+
+CORE PILLARS        :
+    1. Fluid 3D Freedom      — Move anywhere in the arena in real time
+    2. Weighty Combat        — Every hit has visible impact and meaning
+    3. Mana & Rage           — Resource strategy adds depth beyond button mashing
+    4. Character Depth       — 4 unique fighters, each with distinct identity
+    5. Friends-First         — Two friends connect via room code, no installs
+
+TARGET AUDIENCE     : Students, casual competitive players, friend groups
+
+PLAYERS             : 2 online (Multiplayer) or 1 vs AI (Single Player)
+
+COST TO PLAY        : Free — link opens in browser, no account needed
+
+COST TO BUILD/HOST  : ₹0 — 100% free stack, no subscriptions ever
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 2 — COMPLETE FREE TECH STACK
+════════════════════════════════════════════════════════════════════════════════
+
+Every tool listed here is genuinely free, high quality, and appropriate for
+this exact type of project. No trials, no credit cards, no hidden limits.
+
+────────────────────────────────────────────────────────────────────────────────
+2.1 CORE ENGINE & RENDERING
+────────────────────────────────────────────────────────────────────────────────
+
+TOOL         : Three.js
+WEBSITE      : https://threejs.org
+COST         : Free — open source (MIT licence)
+WHY          : The gold standard for 3D in the browser. No installation needed
+               on your laptop — runs entirely as JavaScript in any browser.
+               Handles 3D scenes, cameras, lighting, model loading, animations.
+               Used by major companies worldwide. Enormous documentation and
+               community support. Perfect for a 3D fighting game.
+HOW TO USE   : Include via CDN link in HTML — no npm, no build tools needed.
+               <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js">
+ALTERNATIVE  : Babylon.js (https://babylonjs.com) — also free, slightly more
+               engine-like, good fallback if Three.js proves complex.
+
+────────────────────────────────────────────────────────────────────────────────
+2.2 PHYSICS & HITBOX DETECTION
+────────────────────────────────────────────────────────────────────────────────
+
+TOOL         : Rapier.js
+WEBSITE      : https://rapier.rs
+COST         : Free — open source (Apache 2.0 licence)
+WHY          : Lightweight, blazing fast physics engine that runs in the browser
+               via WebAssembly. Handles capsule-based character hitboxes,
+               collision detection, ground checks, and physics interactions.
+               No performance hit even on low-end laptops.
+HOW TO USE   : Load via CDN. Claude Code will write all physics integration.
+
+ALTERNATIVE  : Cannon-es (https://github.com/pmndrs/cannon-es) — also free,
+               pure JavaScript physics, slightly simpler but less accurate.
+
+────────────────────────────────────────────────────────────────────────────────
+2.3 CHARACTER MODELS
+────────────────────────────────────────────────────────────────────────────────
+
+OPTION A     : Your own custom 3D models (FBX or GLB format)
+               → You provide the model files, Claude Code handles import
+
+OPTION B     : Mixamo Characters
+WEBSITE      : https://mixamo.com (owned by Adobe)
+COST         : Free — requires free Adobe account (no credit card)
+WHY          : Massive library of ready-made realistic humanoid characters.
+               All characters are rigged and ready for animation.
+               Standard humanoid skeleton compatible with all Mixamo animations.
+FORMAT       : Download as FBX for Unity or GLB for Three.js
+NOTE         : Use a free FBX-to-GLB converter: https://products.aspose.app/3d/conversion/fbx-to-gltf
+
+OPTION C     : Ready Player Me
+WEBSITE      : https://readyplayer.me
+COST         : Free
+WHY          : Create custom avatar characters in browser, export as .glb file
+               Great for stylised but realistic character looks
+
+────────────────────────────────────────────────────────────────────────────────
+2.4 CHARACTER ANIMATIONS
+────────────────────────────────────────────────────────────────────────────────
+
+PRIMARY      : Mixamo Animations
+WEBSITE      : https://mixamo.com
+COST         : Free
+WHY          : Thousands of motion-captured animations available free.
+               Search by category. Apply to any Mixamo character.
+               Download as FBX (with skin), then convert to GLB.
+
+ANIMATIONS TO DOWNLOAD FROM MIXAMO (search these exact terms):
+    — Idle (Standing Idle)
+    — Walking
+    — Running
+    — Jump
+    — Double Jump (use "Jump" and edit timing)
+    — Crouch Idle
+    — Crouch Walk
+    — Dash Forward (use "Running Dash" or "Sprint Forward")
+    — Dash Backward (use "Quick Turnaround")
+    — Punch (Light) — search "Jab"
+    — Punch (Medium) — search "Cross"
+    — Punch (Heavy) — search "Uppercut" or "Hook"
+    — Kick Combo — search "Kick Combo"
+    — Getting Hit (High) — search "Hit Reaction"
+    — Getting Hit (Low) — search "Belly Hit"
+    — Knocked Down — search "Dying Backwards"
+    — Get Up — search "Getting Up"
+    — Victory Pose — search "Victory Idle"
+    — Defeat Pose — search "Defeated"
+    — Blocking — search "Guard"
+
+FBX TO GLB CONVERSION (Free):
+WEBSITE      : https://products.aspose.app/3d/conversion/fbx-to-gltf
+ALTERNATIVE  : https://anyconv.com/fbx-to-glb-converter/
+ALTERNATIVE  : Blender (free, https://blender.org) — import FBX, export GLB
+
+────────────────────────────────────────────────────────────────────────────────
+2.5 MULTIPLAYER / REAL-TIME CONNECTION
+────────────────────────────────────────────────────────────────────────────────
+
+PRIMARY      : Partykit.io
+WEBSITE      : https://partykit.io
+COST         : Free tier — more than sufficient for 2-player friend games
+WHY          : Purpose-built for real-time multiplayer browser games.
+               Handles room creation, room codes, syncing player inputs,
+               WebSocket connections. Simple API. Works with plain JavaScript.
+HOW IT WORKS : Player A creates room → gets 6-character code
+               Player B enters code → connected
+               Game syncs inputs between both browsers in real time
+
+ALTERNATIVE  : Socket.io on Railway.app
+WEBSITE      : https://railway.app
+COST         : Free tier (500 hours/month — enough for playing with friends)
+WHY          : More control, slightly more setup. Railway hosts your
+               Socket.io server free. Good fallback option.
+
+ALTERNATIVE  : PeerJS
+WEBSITE      : https://peerjs.com
+COST         : Free — open source
+WHY          : Direct peer-to-peer browser connection. No server needed.
+               Simplest option if Partykit proves complex.
+
+────────────────────────────────────────────────────────────────────────────────
+2.6 GAME HOSTING (Where friends access the link)
+────────────────────────────────────────────────────────────────────────────────
+
+PRIMARY      : GitHub Pages
+WEBSITE      : https://pages.github.com
+COST         : Free — always free, no limits for static sites
+WHY          : Upload your game files to a GitHub repository, enable Pages,
+               instantly get a public URL like: yourusername.github.io/fracture
+               Fast, reliable, globally distributed. Zero cost forever.
+HOW TO USE   : Create free GitHub account → new repository → upload files
+               → Settings → Pages → Enable. Done.
+
+ALTERNATIVE  : itch.io
+WEBSITE      : https://itch.io
+COST         : Free — no commission on free games
+WHY          : Made specifically for indie games. Supports browser-based HTML5
+               games natively. Good discovery if you ever want others to find it.
+               Upload as a ZIP, set as HTML game, publish.
+
+ALTERNATIVE  : Netlify
+WEBSITE      : https://netlify.com
+COST         : Free tier — 100GB bandwidth/month (enormous for this game)
+WHY          : Drag and drop your game folder, instant URL. Dead simple.
+
+────────────────────────────────────────────────────────────────────────────────
+2.7 AI CODING ASSISTANT
+────────────────────────────────────────────────────────────────────────────────
+
+PRIMARY      : Claude (claude.ai) + Claude Code (terminal agent)
+WEBSITE      : https://claude.ai / https://claude.ai/code
+COST         : Free tier available
+WHY          : Most reliable for long multi-file game projects. Understands
+               context across the entire codebase. Writes Three.js, JavaScript,
+               game logic, physics integration, multiplayer code. Best choice
+               for debugging and iterating on complex systems.
+
+HOW TO USE   : Paste this entire document to Claude Code and say:
+               "Build Phase 1 — Three.js arena, one character, movement controls"
+               Work phase by phase. Never ask for everything at once.
+
+────────────────────────────────────────────────────────────────────────────────
+2.8 SOUND EFFECTS GENERATION
+────────────────────────────────────────────────────────────────────────────────
+
+PRIMARY SFX  : GenSFX
+WEBSITE      : https://gensfx.com
+COST         : Free — no signup, no limit listed, royalty-free downloads
+WHY          : Text-to-sound-effect. Describe any sound, download instantly.
+               Perfect for punches, impacts, special move sounds, UI sounds.
+
+BACKUP SFX   : SoundFactory AI
+WEBSITE      : https://soundfactory.ai/ai-sound-generator
+COST         : Free — no signup required
+
+BACKUP SFX   : MyEdit Sound Effect Generator
+WEBSITE      : https://myedit.online/en/audio-editor/ai-sound-effect-generator
+COST         : Free
+
+MUSIC GENERATION : Suno
+WEBSITE      : https://suno.com
+COST         : Free tier — approximately 50 songs per day
+WHY          : Best AI music generator available. Generates full battle tracks,
+               menu music, victory stings from text description. High quality.
+               Chinese orchestral + fighting game style works perfectly here.
+
+BACKUP MUSIC : Udio
+WEBSITE      : https://udio.com
+COST         : Free tier
+
+FREE SFX LIBRARIES (pre-made, no generation needed):
+    — https://freesound.org        (massive library, free account required)
+    — https://openGameArt.org      (made for games, 100% free)
+    — https://kenney.nl            (professional game audio packs, 100% free)
+    — https://mixkit.co            (high quality, no attribution required)
+    — https://pixabay.com/music    (free music and SFX)
+
+────────────────────────────────────────────────────────────────────────────────
+2.9 VOICE LINE GENERATION (Character voices)
+────────────────────────────────────────────────────────────────────────────────
+
+PRIMARY      : ElevenLabs
+WEBSITE      : https://elevenlabs.io
+COST         : Free tier — limited characters/month, enough for short game lines
+WHY          : Best AI voice generation. Create unique voices per character.
+               Generate short grunts, yells, taunts, victory lines.
+               Download as MP3 directly.
+
+ALTERNATIVE  : PlayHT
+WEBSITE      : https://play.ht
+COST         : Free tier available
+
+────────────────────────────────────────────────────────────────────────────────
+2.10 IMAGE / UI ASSETS
+────────────────────────────────────────────────────────────────────────────────
+
+CHARACTER PORTRAITS / ARTWORK:
+    — Adobe Firefly : https://firefly.adobe.com (free tier, AI image generation)
+    — Ideogram      : https://ideogram.ai (free, excellent for game art style)
+    — Bing Image Creator : https://bing.com/create (free, powered by DALL-E)
+
+FONTS (for game UI):
+    — Google Fonts  : https://fonts.google.com (free, use in CSS directly)
+    Recommended: "Cinzel" for titles, "Rajdhani" for HUD, "Bebas Neue" for numbers
+
+ICONS AND UI ELEMENTS:
+    — Kenney UI Pack : https://kenney.nl/assets/ui-pack (free game UI assets)
+    — Game Icons    : https://game-icons.net (free SVG icons for games)
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 3 — COMPLETE GAME FLOW (Every Screen, Every State)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+SCREEN 01 — SPLASH / BOOT SCREEN
+────────────────────────────────────────────────────────────────────────────────
+WHAT PLAYER SEES:
+    — Black screen fades in
+    — Game logo "FRACTURE" animates in with crack/shatter effect
+    — Subtitle fades below: "Every fighter has a pattern. Find it. Break it."
+    — Slow looping background: dim arena footage with fog/particles
+    — Chinese orchestral menu music begins (soft, builds slowly)
+    — "Press any key or click to continue" flashes at bottom
+
+DURATION        : 3-4 seconds then holds until input
+TRANSITION      : Fade to Main Menu
+
+────────────────────────────────────────────────────────────────────────────────
+SCREEN 02 — MAIN MENU
+────────────────────────────────────────────────────────────────────────────────
+WHAT PLAYER SEES:
+    — Logo top centre
+    — 3 large menu options in centre:
+          [ SINGLE PLAYER ]
+          [ MULTIPLAYER   ]
+          [ SETTINGS      ]
+    — Background: animated arena loop with particle effects
+    — Music continues from splash
+
+SINGLE PLAYER    → goes to Character Select (vs AI)
+MULTIPLAYER      → goes to Lobby Screen
+SETTINGS         → opens settings overlay (volume, controls reference)
+
+────────────────────────────────────────────────────────────────────────────────
+SCREEN 03A — LOBBY SCREEN (Multiplayer only)
+────────────────────────────────────────────────────────────────────────────────
+WHAT PLAYER SEES:
+    — Two large panels side by side (Player 1 / Player 2)
+    — [ CREATE ROOM ] button generates a 6-character room code
+    — Room code displayed large and clearly: e.g. "FX-7K2M"
+    — [ JOIN ROOM ] button opens a code input field
+    — Once both connected: both panels show "Connected ✓"
+    — Both proceed to Character Select simultaneously
+
+────────────────────────────────────────────────────────────────────────────────
+SCREEN 03B — CHARACTER SELECT
+────────────────────────────────────────────────────────────────────────────────
+WHAT PLAYER SEES:
+    — 4 character portrait cards displayed in a row
+    — Each card shows: character artwork, name, archetype label
+    — Hover over card: card lifts slightly, subtle glow
+    — Click/select card: large 3D character model preview appears on right side
+      → Character in fighting idle animation, slowly rotating
+      → Can drag to spin manually
+      → Below model: Name, Fighting Style, Special Moves (names only, no damage)
+      → Rage Art indicator: "HAS RAGE ART ✓" or "NO RAGE ART"
+    — Confirm button locks selection
+    — In multiplayer: both players select simultaneously, see each other's pick
+
+────────────────────────────────────────────────────────────────────────────────
+SCREEN 04 — ARENA SELECT
+────────────────────────────────────────────────────────────────────────────────
+WHAT PLAYER SEES:
+    — 2 arena thumbnail cards
+    — Each card: screenshot of arena, arena name, brief description
+    — Hover: preview image expands
+    — Select one → confirm
+    — In multiplayer: Player 1 (host) selects arena
+
+────────────────────────────────────────────────────────────────────────────────
+SCREEN 05 — LOADING SCREEN
+────────────────────────────────────────────────────────────────────────────────
+WHAT PLAYER SEES:
+    — Selected arena artwork as background
+    — Loading bar filling at bottom
+    — Tips displayed (e.g. "Debojeet's Rage Art only triggers at close range")
+    — Controls quick-reference diagram
+
+────────────────────────────────────────────────────────────────────────────────
+SCREEN 06 — IN-GAME (Full detail in Section 6)
+────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────
+SCREEN 07 — POST MATCH
+────────────────────────────────────────────────────────────────────────────────
+WHAT PLAYER SEES:
+    — Winner's name large on screen: "HARSHITA WINS"
+    — Winner plays victory animation
+    — Loser plays defeat pose
+    — Victory music sting plays
+    — Two options appear:
+          [ REMATCH ]
+          [ BACK TO MENU ]
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 4 — CHARACTER ROSTER (Complete Final Version)
+════════════════════════════════════════════════════════════════════════════════
+
+All characters are approximately 1.8m height in-game.
+Hitboxes are capsule-based on skeleton.
+All have: idle, walk, run, jump, double jump, crouch, getup animations.
+
+════════════════════════════════════════════════════════════════════════════════
+CHARACTER 01 — HARSHITA | "The Iron Will"
+════════════════════════════════════════════════════════════════════════════════
+
+ARCHETYPE       : Disciplined Striker | Rushdown
+FIGHTING STYLE  : Precise Muay Thai
+HAS RAGE ART    : YES
+DIFFICULTY      : ★★☆☆ (Beginner-friendly, deep with practice)
+
+BACKSTORY:
+    Harshita was born into a warm, grounded family that valued integrity above
+    everything else. From a young age she carried those values like armour —
+    not because she was told to, but because she genuinely believed in them.
+    She discovered fighting at twelve through a single sparring session that
+    ignited something no classroom could replicate. From that day she trained
+    before sunrise and long after sunset — not for glory, not for money, but
+    because the discipline itself became her identity. By the time FRACTURE
+    was announced she had defeated fighters twice her age and size. She entered
+    not to prove herself to the world, but to test the absolute ceiling of
+    what relentless dedication can produce. She does not trash talk. She does
+    not celebrate. She simply fights — then goes home and trains harder.
+
+PERSONALITY     : Quiet, intense, deeply principled. Speaks rarely.
+VOICE TYPE      : Sharp, fast, minimal — short syllables only
+
+STRENGTHS       : Fastest light attacks in roster, reliable combo starter,
+                  safe pressure game, good juggle potential after Heel Drop
+WEAKNESSES      : Medium damage ceiling without specials, needs mana management,
+                  struggles against long-range fighters
+
+FULL MOVE LIST:
+    ┌──────────┬───────────────────┬──────────┬────────┬────────────────────────────────────┐
+    │ Input    │ Move Name         │ Mana Cost│ Damage │ Description                        │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ U        │ Light Strike      │ 0%       │ 5%     │ Fast Muay Thai jab. Safe on block. │
+    │          │                   │          │        │ Chainable up to 3 times.           │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ I        │ Pressure Kick     │ 0%       │ 8%     │ Forward knee strike. Staggers      │
+    │          │                   │          │        │ opponent on hit. Good combo start. │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ O        │ Heel Drop         │ 0%       │ 12%    │ Overhead axe kick. Slow startup.   │
+    │          │                   │          │        │ Launches opponent upward on hit.   │
+    │          │                   │          │        │ Enables air juggle follow-up.      │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ J        │ Iron Sequence     │ 0%       │ 15%    │ 4-hit preset combo: jab, cross,    │
+    │          │                   │          │        │ knee, elbow. Clean and fast.       │
+    │          │                   │          │        │ Last hit causes slight stagger.    │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ K        │ LEETCODE SWARM    │ 100%     │ 22%    │ SPECIAL MOVE (Full Mana):          │
+    │          │                   │          │        │ Harshita's technical obsession     │
+    │          │                   │          │        │ manifests as a storm of glowing    │
+    │          │                   │          │        │ symbols: + − $ % / * flying at     │
+    │          │                   │          │        │ opponent in rapid chaotic sequence.│
+    │          │                   │          │        │ Each symbol is a razor projectile. │
+    │          │                   │          │        │ Pattern looks chaotic, is actually │
+    │          │                   │          │        │ precisely calculated. Hard to block.│
+    │          │                   │          │        │ Cinematic camera shift on activate.│
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ K (half) │ Tornado Kick      │ 50%      │ 18%    │ SPECIAL MOVE (Half Mana):          │
+    │          │                   │          │        │ Deep breath then spinning heel kick│
+    │          │                   │          │        │ so fast it generates visible vortex│
+    │          │                   │          │        │ of force. Launches opponent upward.│
+    │          │                   │          │        │ Enables juggle combo follow-up.    │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ RAGE ART │ Undying Resolve   │ HP<30%   │ +10%HP │ RAGE ART:                          │
+    │          │                   │ All Mana │        │ Near death, she goes quieter not   │
+    │          │                   │          │        │ panicked. Closes eyes one second.  │
+    │          │                   │          │        │ Opens them with absolute focus.    │
+    │          │                   │          │        │ Disciplined energy surge restores  │
+    │          │                   │          │        │ 10% max HP. Re-enters stance calm. │
+    │          │                   │          │        │ Usable once per round.             │
+    └──────────┴───────────────────┴──────────┴────────┴────────────────────────────────────┘
+
+VICTORY QUOTE   : "Talent gets you to the door. Discipline kicks it down."
+DEFEAT QUOTE    : [silence — she walks off and trains]
+SPECIAL TAUNT   : "Again."
+
+════════════════════════════════════════════════════════════════════════════════
+CHARACTER 02 — HARSHITA·S | "The Applied Mind"
+════════════════════════════════════════════════════════════════════════════════
+
+ARCHETYPE       : Technical Counter-Fighter | Knowledge Weaponised
+FIGHTING STYLE  : Counter-based Krav Maga, scientifically structured
+HAS RAGE ART    : YES
+DIFFICULTY      : ★★★☆ (Requires reading opponents, rewarding for patient players)
+
+BACKSTORY:
+    Born into a family of academics with considerable social standing,
+    Harshita·S graduated with a 9 CGPA — consistently the highest in every
+    room she entered. When she turned her attention to combat she approached
+    it the same way she approached everything else: as a subject to be mastered
+    through study, analysis, and cold experimentation. She dissected fight
+    footage like a surgeon, studied biomechanics and opponent psychology, and
+    trained not to feel strong but to be correct. Unlike Harshita whose drive
+    is purely internal, Harshita·S saw what others missed — the FRACTURE
+    tournament is not just a competition but an opportunity. Prize money,
+    sponsorships, the kind of credibility that turns a fighter into a brand.
+    She did the math. The return on investment was undeniable. She entered the
+    arena with a fight plan and a projected revenue model for the next three
+    years. The arena is her laboratory. Every opponent is a problem to be
+    solved — and every solved problem pays.
+
+PERSONALITY     : Analytical, composed, mildly mercenary. Warm surface,
+                  relentlessly calculating underneath.
+VOICE TYPE      : Composed, slightly smug, precise diction
+
+STRENGTHS       : Strongest counter-hit game, highest skill ceiling,
+                  Mirror Protocol creates mind games, 9 CGPA is devastating
+WEAKNESSES      : Low damage if opponent doesn't attack first, needs patience,
+                  punished heavily if she misreads opponent
+
+FULL MOVE LIST:
+    ┌──────────┬───────────────────┬──────────┬────────┬────────────────────────────────────┐
+    │ Input    │ Move Name         │ Mana Cost│ Damage │ Description                        │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ U        │ Calculated Jab    │ 0%       │ 5%     │ Clinical precise poke. Designed to │
+    │          │                   │          │        │ bait opponent into attacking.       │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ I        │ Study Break       │ 0%       │ 8%     │ Counter-hit bonus: deals 13% damage │
+    │          │                   │          │        │ if opponent attacked in last 0.5s. │
+    │          │                   │          │        │ Otherwise standard 8%. Reads tempo.│
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ O        │ Thesis Drop       │ 0%       │ 12%    │ Targeted biomechanical strike to   │
+    │          │                   │          │        │ opponent's most exposed point.     │
+    │          │                   │          │        │ Always causes stagger.             │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ J        │ Peer Review       │ 0%       │ 15%    │ 4-hit analytical combo. Each hit   │
+    │          │                   │          │        │ targets different body zone. Last  │
+    │          │                   │          │        │ hit always staggers opponent.       │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ STANCE   │ Mirror Protocol   │ 0%       │ varies │ PASSIVE STANCE ABILITY:            │
+    │          │                   │          │        │ After absorbing a Medium hit,      │
+    │          │                   │          │        │ instantly mirrors simplified        │
+    │          │                   │          │        │ version of opponent's last move    │
+    │          │                   │          │        │ back at them with amplified effect.│
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ K        │ 9 CGPA            │ 100%     │ 25%    │ SPECIAL MOVE (Full Mana):          │
+    │          │                   │          │        │ She charges with golden academic   │
+    │          │                   │          │        │ aura. Draws a massive glowing "9"  │
+    │          │                   │          │        │ in the air. The number solidifies, │
+    │          │                   │          │        │ rotates, and launches at opponent  │
+    │          │                   │          │        │ like a physical wall. Absurd but   │
+    │          │                   │          │        │ devastating. Makes complete sense  │
+    │          │                   │          │        │ coming from her. Cinematic shift.  │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ K (half) │ Tornado Kick      │ 50%      │ 17%    │ SPECIAL MOVE (Half Mana):          │
+    │          │                   │          │        │ Faster startup than Harshita's     │
+    │          │                   │          │        │ version. Slightly less launch height│
+    │          │                   │          │        │ but scrambles opponent directional │
+    │          │                   │          │        │ controls for 1 second on landing.  │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ RAGE ART │ Academic          │ HP<30%   │ +10%HP │ RAGE ART:                          │
+    │          │ Resilience        │ All Mana │        │ She has survived thesis defences   │
+    │          │                   │          │        │ and seventeen all-nighters. A      │
+    │          │                   │          │        │ tournament will not break her.     │
+    │          │                   │          │        │ Adjusts stance with infuriating    │
+    │          │                   │          │        │ calm. Structured energy burst      │
+    │          │                   │          │        │ restores 10% max HP. Immediately   │
+    │          │                   │          │        │ follows with textbook counter.     │
+    └──────────┴───────────────────┴──────────┴────────┴────────────────────────────────────┘
+
+VICTORY QUOTE   : "I already calculated your loss before the round started."
+DEFEAT QUOTE    : "Interesting. I'll need to revise my model."
+SPECIAL TAUNT   : "Your pattern has a 94% predictability rating."
+
+════════════════════════════════════════════════════════════════════════════════
+CHARACTER 03 — DEBOJEET | "The Immovable"
+════════════════════════════════════════════════════════════════════════════════
+
+ARCHETYPE       : Grappler | Juggernaut | Raw Power
+FIGHTING STYLE  : Judo-dominant with devastating ground-and-pound
+HAS RAGE ART    : YES (Close Range condition)
+DIFFICULTY      : ★★☆☆ (Simple to learn, requires positioning mastery)
+
+BACKSTORY:
+    Debojeet grew up in a stable, loving household — the kind most people stay
+    in forever. He did not leave out of pain or rebellion. He left because
+    something wordless inside him demanded more than comfort could offer. At
+    fifteen years old he walked out with nothing but the clothes on his back
+    and an obsession that had consumed him since childhood: the pursuit of pure
+    uncompromised physical strength. Not the strength of machines or
+    supplements, but the kind built through suffering, repetition and iron will.
+    He spent years training under judo masters across remote regions, sleeping
+    on hard floors, eating what was available, training until his body gave out
+    then training again the next morning. He never complained. Complaint to
+    Debojeet is wasted energy. His physique is the autobiography of that
+    journey — every scar, every callus, every corded muscle tells a story he
+    never bothers to speak aloud. He fights because he has nothing left to
+    prove. That is precisely what makes him so dangerous.
+
+PERSONALITY     : Almost no words. Deeply respectful to those who earn it.
+                  Immovable in body and principle. Never late. Never rattled.
+VOICE TYPE      : Deep, slow, guttural — one or two syllables maximum
+
+STRENGTHS       : Highest single-hit damage in roster, Inferno Fist is
+                  a reliable long-range punish, Rage Art is terrifying in
+                  close range, command grab options control space
+WEAKNESSES      : Slowest movement speed, punished hard by mobile fighters,
+                  Rage Art completely useless at distance — must manage gap
+
+FULL MOVE LIST:
+    ┌──────────┬───────────────────┬──────────┬────────┬────────────────────────────────────┐
+    │ Input    │ Move Name         │ Mana Cost│ Damage │ Description                        │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ U        │ Iron Jab          │ 0%       │ 5%     │ Dense meaty jab. Slow but pushes   │
+    │          │                   │          │        │ opponent back on contact. Safe.    │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ I        │ Shoulder Rush     │ 0%       │ 9%     │ Closes distance rapidly. Staggers  │
+    │          │                   │          │        │ on hit. Best tool to close gap.    │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ O        │ Seismic Slam      │ 0%       │ 14%    │ Grabs and lifts opponent, drives   │
+    │          │                   │          │        │ into ground hard. Ground bounce    │
+    │          │                   │          │        │ allows follow-up on heavier hits.  │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ J        │ Judo Chain        │ 0%       │ 16%    │ 3-hit grapple sequence: wrist grab,│
+    │          │                   │          │        │ hip throw, ground pin. Slowest     │
+    │          │                   │          │        │ combo in game but most damage.     │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ K        │ INFERNO FIST      │ 100%     │ 28%    │ SPECIAL MOVE (Full Mana):          │
+    │          │                   │          │        │ Plants feet. Slow deliberate breath.│
+    │          │                   │          │        │ Fist charges to deep burning orange│
+    │          │                   │          │        │ — not flashy, just growing hotter. │
+    │          │                   │          │        │ Releases dense concentrated        │
+    │          │                   │          │        │ fireball forward. Straight line.   │
+    │          │                   │          │        │ No curve. No spread. Just arrives. │
+    │          │                   │          │        │ Most damaging projectile in game.  │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ RAGE ART │ The Last Lesson   │ HP<30%   │ 40%    │ RAGE ART — CLOSE RANGE ONLY:       │
+    │          │                   │ All Mana │        │ Only activates if opponent is      │
+    │          │                   │          │        │ within close range (2m or less).   │
+    │          │                   │          │        │ Deals ZERO damage if too far.      │
+    │          │                   │          │        │ Debojeet does not chase.           │
+    │          │                   │          │        │ ON HIT: absorbs next incoming hit  │
+    │          │                   │          │        │ entirely without flinching. Then   │
+    │          │                   │          │        │ delivers 3 bone-shattering judo    │
+    │          │                   │          │        │ throws ending in final slam.       │
+    │          │                   │          │        │ Arena floor cracks. Camera shakes. │
+    └──────────┴───────────────────┴──────────┴────────┴────────────────────────────────────┘
+
+VICTORY QUOTE   : "Pain is just your body learning something new."
+DEFEAT QUOTE    : [exhales slowly, walks away]
+SPECIAL TAUNT   : [silence — just stares]
+
+════════════════════════════════════════════════════════════════════════════════
+CHARACTER 04 — RYOMEN RAJ | "The Unbound"
+════════════════════════════════════════════════════════════════════════════════
+
+ARCHETYPE       : Chaos Sovereign | Highest Combo Depth | Cursed Energy Arts
+FIGHTING STYLE  : No school — cursed energy combat, absorbed secret arts
+HAS RAGE ART    : NO (Does not need one — too many options already)
+DIFFICULTY      : ★★★★ (Hardest to master, most rewarding ceiling)
+
+BACKSTORY:
+    Ryomen Raj's origins are, by design or by nature, unclear. There are
+    fragments — suggestions of a family somewhere, a home that may once have
+    held him. What is known is that Raj was never what the world wanted him
+    to be. Slow to rise, slow to respond, rarely on time, rarely bothered.
+    The people around him — family, friends, neighbours — did not understand
+    him. And what people do not understand, they resent. They called him
+    worthless. Directionless. Cursed. They poured their frustration, contempt
+    and disappointment into him like he was a vessel built to receive it.
+    He never argued. He never left. He simply collected it all.
+    Because Ryomen Raj understood something none of them ever did — emotion
+    is energy. Resentment, hatred, despair, contempt — it carries weight.
+    And weight in the right hands becomes power. He absorbed every curse
+    whispered in his direction, every dismissive glance, every slammed door —
+    not with bitterness, but with quiet terrifying patience. He never felt
+    wounded by it. He simply kept it all, let it settle into him, and over
+    time it became something no discipline or training could manufacture: a raw
+    boundless personal power that answers only to him. He lives life exactly
+    as he finds it interesting — unbound by any law, any schedule, any
+    expectation he did not personally agree to. He holds many secret arts and
+    carries within him the accumulated cursed energy of everyone who wrote
+    him off. Why he entered FRACTURE remains unclear — even to him, probably.
+    He mentioned it looked interesting. He arrived late to registration,
+    snack in hand. He yawned during the opening ceremony.
+    Then the first round began.
+
+PERSONALITY     : Unhurried, unbothered, occasionally delightful. Laughs at
+                  wrong moments. Goes quiet at wrong moments. The switch
+                  between lazy and combat-ready is the most unsettling thing
+                  about him — because there is no warning.
+VOICE TYPE      : Slow, languid, casual — then suddenly precise in combat
+
+STRENGTHS       : Longest combo routes, most unpredictable attack patterns,
+                  Secret Art Chain (exclusive second combo extension), Domain
+                  Expansion is most visually devastating special in roster
+WEAKNESSES      : Higher execution requirement, inconsistent if played lazily
+                  (fitting), poor against patient turtling opponents
+
+FULL MOVE LIST:
+    ┌──────────┬───────────────────┬──────────┬────────┬────────────────────────────────────┐
+    │ Input    │ Move Name         │ Mana Cost│ Damage │ Description                        │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ U        │ Casual Flick      │ 0%       │ 6%     │ Looks lazy, somehow perfectly       │
+    │          │                   │          │        │ placed. Deceptively quick startup. │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ I        │ Cursed Tap        │ 0%       │ 9%     │ Dark energy crackle visible on     │
+    │          │                   │          │        │ contact. Leaves brief curse debuff. │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ O        │ Sovereign Strike  │ 0%       │ 13%    │ Explosive cursed energy burst.     │
+    │          │                   │          │        │ Wall bounce if opponent near wall. │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ J        │ Chaos String      │ 0%       │ 18%    │ 5-hit combo. No fixed rhythm.      │
+    │          │                   │          │        │ Each hit from different angle.     │
+    │          │                   │          │        │ Longest base combo in game.        │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ J+J      │ SECRET ART CHAIN  │ 0%       │ 26%    │ EXCLUSIVE TO RAJ ONLY:             │
+    │(extended)│                   │          │        │ Second J press after landing Chaos │
+    │          │                   │          │        │ String unlocks deeper combo route. │
+    │          │                   │          │        │ No other character has this.       │
+    │          │                   │          │        │ Adds 3 more hits from impossible   │
+    │          │                   │          │        │ angles using cursed energy.        │
+    ├──────────┼───────────────────┼──────────┼────────┼────────────────────────────────────┤
+    │ K        │ DOMAIN EXPANSION: │ 100%     │ 35%    │ SPECIAL MOVE (Full Mana):          │
+    │          │ THE OTHER WORLD   │          │        │ Raj stops. Exhales once, slowly,   │
+    │          │                   │          │        │ like a man about to take a nap.    │
+    │          │                   │          │        │ Arena warps — sky tears, ground    │
+    │          │                   │          │        │ shifts. Both fighters enter another│
+    │          │                   │          │        │ dimension for exactly 5 seconds.   │
+    │          │                   │          │        │ In this space Raj transforms —     │
+    │          │                   │          │        │ posture straightens, eyes fully    │
+    │          │                   │          │        │ open — becomes briefly something   │
+    │          │                   │          │        │ that doesn't match the man before. │
+    │          │                   │          │        │ Unleashes full cursed energy       │
+    │          │                   │          │        │ sequence from every absorbed art.  │
+    │          │                   │          │        │ World snaps back. He slouches.     │
+    │          │                   │          │        │ Opponent is not in good shape.     │
+    └──────────┴───────────────────┴──────────┴────────┴────────────────────────────────────┘
+
+NO RAGE ART — Ryomen Raj does not have a last resort because he has never
+needed one. His combo arsenal is wide enough that he always has somewhere to
+go. A man with infinite options does not need a panic button.
+
+VICTORY QUOTE   : "I wasn't planning to win today. But here we are."
+VICTORY LAUGH   : Slow, building, deeply unbothered evil laugh — genuinely
+                  unsettling because it is so casual. Trails off into silence.
+DEFEAT QUOTE    : "Hm. Interesting." [yawns]
+SPECIAL TAUNT   : "You sure you want to keep going?"
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 5 — ARENAS (2 at Launch)
+════════════════════════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════════════════════════
+ARENA 01 — THE FORGOTTEN TEMPLE
+════════════════════════════════════════════════════════════════════════════════
+
+SETTING         : Ancient stone temple, deep in an unnamed forest. Partially
+                  collapsed, overgrown with thick moss and creeping vines.
+                  Cracked stone pillars line the edges. The roof has partially
+                  fallen in — dusk light bleeds through the gaps in dramatic
+                  golden shafts. Incense smoke drifts from broken braziers.
+
+ATMOSPHERE      : Silent reverence. A place of former discipline. Where
+                  Debojeet is rumoured to have trained for years in total
+                  isolation. The weight of thousands of hours of suffering
+                  hangs in the air. Even new fighters feel it immediately.
+
+TIME OF DAY     : Dusk — golden and fading, deepening shadows at the edges
+
+FLOOR           : Cracked stone tiles. Heavy ground slams raise visible dust
+                  clouds. Scuff marks appear on floor from slides and dashes.
+
+WALLS           : Natural heavy stone. Wall splat causes visible cracks in
+                  stone surface with dust particle burst. Each splat adds
+                  permanent crack marks to that section of wall for the round.
+
+BOUNDARY        : High stone walls on all sides, 4-6m height. No ring-out.
+                  Invisible collision boundary where walls have fully collapsed.
+
+ARENA SHAPE     : Circular — approximately 20 metres diameter
+
+CAMERA BOUNDARY : Stays within temple interior. No exterior visible.
+
+DYNAMIC DETAILS :
+    — Incense smoke particle streams from 4 braziers (constant)
+    — Candle flames in background flicker on heavy attacks (wind from force)
+    — Dust motes visible in light shafts
+    — Distant bird calls in ambient audio
+    — Moss and vine texture on all stone surfaces
+
+MUSIC STYLE     : Deep slow erhu leading. Distant temple bells on rhythm.
+                  Taiko drums building intensity with combo escalation.
+                  Atmospheric, heavy, ancient. No electronic elements.
+
+SUNO PROMPT     : "Ancient Chinese temple battle theme, slow erhu melody,
+                   taiko drums building intensity, temple bells, atmospheric
+                   and heavy, dusk ambience, loopable fighting game music,
+                   Shadow Fight 2 style, 95 BPM"
+
+CHARACTERS WHO FIT HERE: Debojeet (trained here), Harshita (resonates with
+                          the discipline the space demands)
+
+════════════════════════════════════════════════════════════════════════════════
+ARENA 02 — THE CURSED DISTRICT
+════════════════════════════════════════════════════════════════════════════════
+
+SETTING         : Underground urban space below a collapsed city block. Once
+                  a maintenance corridor or storage facility — now a de facto
+                  arena after the ceiling partially collapsed and night life
+                  moved in. Broken neon signs hang at angles — red, blue,
+                  cyan. Cracked concrete floors with spreading water puddles.
+                  Rain falls through gaps in the collapsed ceiling above.
+                  Night time. The city exists distantly above but feels
+                  completely unreachable from down here.
+
+ATMOSPHERE      : Heavy, electric, saturated with unspoken history. This is
+                  where people who were written off ended up. The energy here
+                  feels dense — like the walls absorbed too many bad days.
+                  Ryomen Raj spent years in a place exactly like this.
+                  Everything about it feels like his home ground.
+
+TIME OF DAY     : Night — no natural light. All illumination from broken neon.
+
+FLOOR           : Wet cracked concrete. Puddles ripple visibly on ground slams
+                  and dashes. Splash effects on low hits near puddles.
+
+WALLS           : Concrete and exposed rebar. Sparks fly dramatically on wall
+                  splat hits. Some walls have graffiti and old posters.
+                  Visible rebar bends slightly on heavy wall impacts.
+
+BOUNDARY        : Collapsed rubble creates natural irregular walls. Invisible
+                  energy boundary glows faint red at arena edges.
+
+ARENA SHAPE     : Irregular polygon — approximately 20 metres across but not
+                  perfectly circular, giving it an organic chaotic feel.
+
+CAMERA BOUNDARY : Interior only. Ceiling visible with rain falling through.
+
+DYNAMIC DETAILS :
+    — Neon signs flicker inconsistently (not on rhythm — feels alive/broken)
+    — Rain particle effects falling through ceiling gaps constantly
+    — Puddle ripple effects on all ground impacts
+    — Distant city ambience — horns, voices, indistinct
+    — Sparks from exposed wiring in background (non-interactive)
+    — When Domain Expansion activates here, the entire colour palette inverts
+      for 5 seconds — neon becomes dark, shadows become light. Unique effect
+      exclusive to using Raj's special in this arena.
+
+MUSIC STYLE     : Dark Chinese orchestral with urban electronic undertones.
+                  Erhu melody over deep bass pulse. Unsettling rhythm.
+                  Heavier and more claustrophobic than Temple theme.
+
+SUNO PROMPT     : "Dark urban Chinese orchestral fighting game music, erhu
+                   over heavy electronic bass, neon night city underground,
+                   unsettling and claustrophobic, rain atmosphere, cursed
+                   energy theme, loopable, 110 BPM, Shadow Fight 3 style"
+
+CHARACTERS WHO FIT HERE: Ryomen Raj (spiritual home), Harshita·S (clinical
+                          eye sees the arena as a controlled environment)
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 6 — COMBAT SYSTEM (Complete Rules)
+════════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+6.1 MOVEMENT
+────────────────────────────────────────────────────────────────────────────────
+
+CONTROL         : W/A/S/D keys (keyboard) or left stick (gamepad if supported)
+DIRECTION       : Relative to camera — fully 3D movement in any direction
+
+    W / Up        → Move forward (toward opponent or into arena)
+    S / Down      → Move backward
+    A / Left      → Strafe left
+    D / Right     → Strafe right
+
+WALKING SPEED   : 5 metres per second
+DASH            : Double-tap W = dash forward (12 m/s burst, 0.3s duration)
+                  Double-tap S = dash backward (identical)
+                  Cannot attack during first 0.3 seconds of dash
+JUMP            : Spacebar — 2.5m height, directional influence from WASD
+DOUBLE JUMP     : Spacebar again mid-air — adds 1.8m additional height
+CROUCH          : Hold Ctrl — lowers hitbox by 40%, avoids all high attacks
+                  Can move slowly while crouching
+
+────────────────────────────────────────────────────────────────────────────────
+6.2 ATTACK BUTTONS
+────────────────────────────────────────────────────────────────────────────────
+
+    U = Light Attack  (fast, safe, chainable)
+    I = Medium Attack (staggers or launches, combo starter)
+    O = Heavy Attack  (slow, high damage, wall/ground interaction)
+    J = Combo String  (preset sequence, beginner-friendly)
+    K = Special Move  (mana-consuming — full or half depending on hold)
+
+────────────────────────────────────────────────────────────────────────────────
+6.3 MANA SYSTEM
+────────────────────────────────────────────────────────────────────────────────
+
+STARTING VALUE  : 0% at beginning of every round
+GAIN ON HIT     : +10% per successful hit landed
+GAIN ON DAMAGE  : +5% per hit received (fighting back fuels you)
+MAXIMUM         : 100%
+DISPLAY         : Semi-transparent bar below health bar
+
+SPENDING:
+    Full Special (K)       = Costs 100% mana
+    Half Special (K hold)  = Costs 50% mana (where applicable)
+    Rage Art               = Costs ALL remaining mana (any amount)
+
+MANA DOES NOT carry over between rounds. Resets to 0 each round.
+
+────────────────────────────────────────────────────────────────────────────────
+6.4 HEALTH SYSTEM
+────────────────────────────────────────────────────────────────────────────────
+
+STARTING HP     : 100% per round
+ROUND WIN       : Opponent reaches 0% HP, OR timer runs out (higher HP wins)
+MATCH           : Best of 3 rounds
+ROUND TIMER     : 75 seconds per round
+HP DISPLAY      : Bar at top of screen. Drains from outside in toward centre.
+
+────────────────────────────────────────────────────────────────────────────────
+6.5 BLOCKING & DEFENSE
+────────────────────────────────────────────────────────────────────────────────
+
+BLOCK HIGH/MID  : Hold direction away from opponent while they attack
+BLOCK LOW       : Crouch + hold direction away from opponent
+DAMAGE REDUCTION: 90% when blocking correctly
+CHIP DAMAGE     : 10% damage still applies even on perfect block
+
+GUARD METER     : Small bar below health. Not visible until it starts depleting.
+                  Heavy attacks deplete it significantly.
+                  When guard meter empties → GUARD BREAK
+                  Guard break = opponent staggers for 1.5 seconds (punish window)
+
+────────────────────────────────────────────────────────────────────────────────
+6.6 WALL INTERACTIONS
+────────────────────────────────────────────────────────────────────────────────
+
+WALL SPLAT      : Hitting opponent into boundary wall causes wall splat.
+                  Opponent is pinned briefly (0.8 seconds extra stun).
+                  Follow-up attacks are easier to land.
+                  Visual: crack appears in wall at impact point.
+
+WALL BOUNCE     : Heavy attack into a wall-splatted opponent causes wall bounce.
+                  Opponent flies back toward centre of arena.
+                  Attacker has time to run in and continue combo.
+
+────────────────────────────────────────────────────────────────────────────────
+6.7 COMBO SYSTEM
+────────────────────────────────────────────────────────────────────────────────
+
+JUGGLING        : Medium attack that causes launch → air combo possible
+                  Air combo sequence: Light, Light, Combo String
+                  Gravity increases on each air hit (diminishing returns)
+
+GROUND BOUNCES  : Heavy attacks can bounce opponent off floor for follow-ups
+
+WALL BOUNCE     : (See 6.6 above)
+
+COMBO DAMAGE SCALING : Each hit in a long combo deals slightly less damage
+                       than previous (prevents infinite loop combos)
+
+────────────────────────────────────────────────────────────────────────────────
+6.8 SPECIAL MOVE CINEMATICS
+────────────────────────────────────────────────────────────────────────────────
+
+When a Special Move (full mana cost) is activated:
+    — Camera shifts to dramatic preset cinematic angle
+    — UI elements dim to 20% opacity
+    — Motion blur applies to attacker during animation
+    — Slow motion effect on impact frame (0.3 seconds)
+    — Camera snaps back to gameplay immediately after
+    — Entire sequence adds approximately 2-3 seconds total
+
+When a Rage Art is activated:
+    — Same as above but more dramatic camera angle
+    — Screen briefly darkens at edges (vignette)
+    — Character's theme music sting plays
+    — Longer slow motion on final hit
+
+────────────────────────────────────────────────────────────────────────────────
+6.9 RAGE ART RULES (Summary)
+────────────────────────────────────────────────────────────────────────────────
+
+AVAILABLE TO    : Harshita, Harshita·S, Debojeet (NOT Ryomen Raj)
+ACTIVATION      : HP must be below 30%
+MANA COST       : Consumes ALL remaining mana regardless of amount
+USES PER ROUND  : Once only
+DEBOJEET NOTE   : His Rage Art deals 0 damage if opponent not in close range
+
+CHARACTER       RAGE ART EFFECT
+Harshita        Heals 10% max HP, re-enters stance focused
+Harshita·S      Heals 10% max HP, follows with counter strike
+Debojeet        40% damage — absorb next hit, 3 throws, final slam
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 7 — HUD LAYOUT (In-Game UI)
+════════════════════════════════════════════════════════════════════════════════
+
+FULL HUD DIAGRAM:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  [PLAYER 1 NAME]    ████████████████████  100%    TIMER    100%  ████████████████████  [PLAYER 2 NAME]  │
+│  [Mana ░░░░░░░░░░░░░░░░░░░]                  75               [░░░░░░░░░░░░░░░░░░░ Mana]  │
+│       ★ ★ ☆  ROUND 1                                          ★ ☆ ☆                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+ELEMENTS:
+    Health Bar      : Top left (P1) and top right (P2). Drains inward.
+    Mana Gauge      : Below health bar. Semi-transparent. Fills left to right.
+    Round Indicators: Stars below health. Filled star = round won.
+    Round Number    : Centre above timer.
+    Timer           : Centre. Large. Counts down from 75. Red when below 10.
+    Character Names : Above health bars.
+
+FONT CHOICE (Google Fonts — free):
+    Health/Timer    : "Bebas Neue" — bold, readable, fighting game standard
+    Names           : "Rajdhani" — clean, semi-condensed, professional
+    Title/Logo      : "Cinzel" — dramatic, slightly ancient feel
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 8 — CAMERA SYSTEM
+════════════════════════════════════════════════════════════════════════════════
+
+DEFAULT POSITION    : Third-person, slightly elevated, behind P1's character
+                      Zoomed out enough to see both fighters at all times
+
+TRACKING BEHAVIOUR  : Camera smoothly follows midpoint between both characters.
+                      Distance increases as fighters move apart.
+                      Distance decreases as fighters are close.
+                      Always keeps both fighters fully in frame.
+                      Smooth interpolation — never snaps or jumps.
+
+CAMERA HEIGHT       : Slightly above eye level. Angled down at approximately
+                      15 degrees. Gives slight cinematic perspective.
+
+CINEMATIC MODE      : Activates during Special Moves and Rage Arts.
+                      Preset dramatic angle stored per-special-per-character.
+                      Motion blur applied to attacker.
+                      Returns to gameplay camera after animation ends.
+
+ARENA BOUNDS        : Camera cannot pass through arena walls.
+                      Minimum distance from any wall: 2 metres.
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 9 — SINGLE PLAYER MODE
+════════════════════════════════════════════════════════════════════════════════
+
+FLOW            : Main Menu → Single Player → Character Select → Arena Select
+                  → Loading → Fight vs AI → Post Match
+
+ROUND RULES     : Identical to multiplayer — best of 3, 75 second timer
+
+DIFFICULTY LEVELS:
+    EASY    — Slow reaction time (500ms+), random move selection,
+              rarely blocks, never uses specials, moves predictably
+    MEDIUM  — Reacts within 300ms, blocks medium attacks occasionally,
+              uses specials when mana is full, dashes away sometimes
+    HARD    — Near frame-perfect reactions (150ms), blocks most attacks,
+              punishes unsafe moves, manages mana strategically,
+              dashes away to recharge, baits whiffs, uses Rage Art correctly
+
+AI LOGIC        : Decision tree state machine. Reads player's last 3 inputs.
+                  Probability-weighted response based on difficulty.
+                  States: Idle → Approach → Pressure → Defend → Punish → Recover
+                  Claude Code will build this as a simple state machine script.
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 10 — MULTIPLAYER SYSTEM
+════════════════════════════════════════════════════════════════════════════════
+
+TYPE            : Online friends-only lobby. 2 players maximum per session.
+
+TECHNOLOGY      : Partykit.io (free tier — sufficient for friend games)
+                  WebSocket connection via room code system.
+
+FLOW:
+    Player A opens game → clicks Multiplayer → clicks Create Room
+    → Game generates 6-character room code (e.g. "FX-7K2M")
+    → Code displayed large on screen
+    → Player A shares code with friend (via message/chat)
+    → Player B opens game → clicks Multiplayer → clicks Join Room
+    → Enters 6-character code
+    → Both players connected — see each other's status in lobby
+    → Both select characters (simultaneously, see each other's pick live)
+    → Player A (host) selects arena
+    → Both click Ready
+    → Countdown: 3... 2... 1... FIGHT
+
+SYNC METHOD     : Input synchronisation — each player's inputs sent to other
+                  browser every frame via WebSocket. Applied locally.
+                  Simple and effective for a low-latency friends game.
+
+INPUT DELAY     : 2 frames offline, variable (up to 6 frames) based on ping.
+                  Acceptable for casual friends play.
+
+DISCONNECTION   : If opponent disconnects mid-match, game pauses and shows
+                  "Opponent Disconnected" with option to return to menu.
+
+AFTER MATCH     : Both players see:  [ REMATCH ]  [ BACK TO LOBBY ]
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 11 — SOUND DESIGN COMPLETE LIST
+════════════════════════════════════════════════════════════════════════════════
+
+All generated via GenSFX (gensfx.com) — free, no signup
+All music generated via Suno (suno.com) — free tier
+
+STATUS KEY: [DONE] = Generated  [TODO] = Still needed
+
+HARSHITA SOUNDS:
+    [DONE] Light punch impact — sharp disciplined Muay Thai jab
+    [DONE] Heavy punch impact — powerful hook, bone crunch
+    [DONE] Combo sequence — rapid 4-hit escalating impacts
+    [DONE] Receiving damage — short sharp grunt, stoic
+    [DONE] Leetcode Swarm — digital symbols, electric buzz, metallic impacts
+    [DONE] Tornado Kick — spinning vortex, dramatic whoosh and impact
+    [DONE] Rage Art activate — focused breathing, calm energy surge
+    [DONE] Victory — controlled exhale, no words
+
+HARSHITA·S SOUNDS:
+    [DONE] Light punch — precise clinical counter strike
+    [DONE] Heavy punch — targeted bone impact
+    [DONE] Combo sequence — methodical building clinical impacts
+    [DONE] Receiving damage — brief controlled grunt
+    [DONE] 9 CGPA — golden charge, massive number launch, enormous crash
+    [DONE] Tornado Kick — controlled vortex, technical whoosh
+    [DONE] Rage Art activate — golden aura ignition, power surge
+    [DONE] Victory — satisfied hum, pen click, quiet chuckle
+
+DEBOJEET SOUNDS:
+    [DONE] Light punch — dense meaty jab impact
+    [DONE] Heavy punch — earth-shaking, bone crushing
+    [DONE] Combo sequence — slow building, ending in slam
+    [DONE] Receiving damage — deep grunt, barely flinching
+    [DONE] Inferno Fist — fire charging crackle, fireball launch, roaring impact
+    [DONE] Rage Art — three throws escalating, final slam, arena floor crack
+    [DONE] Rage Art activate — primal war cry building from silence
+    [DONE] Victory — single slow exhale, heavy footstep
+
+RYOMEN RAJ SOUNDS:
+    [DONE] Light punch — casual hit that somehow lands perfectly
+    [DONE] Heavy punch — cursed energy crackling dark impact
+    [DONE] Combo sequence — chaotic rhythm, crackling between hits
+    [DONE] Receiving damage — unbothered grunt, almost amused
+    [DONE] Domain Expansion activate — reality tearing, dimensional rift
+    [DONE] Domain transformation — voice distort, dark aura surge
+    [DONE] Cursed energy hits inside domain — supernatural impacts
+    [DONE] Victory evil laugh — slow building unsettling casual laugh
+    [DONE] Victory alt — yawn then laugh, one slow clap
+    [DONE] Cursed energy ambient — low dark hum, supernatural crackle
+
+MUSIC:
+    [TODO] Arena 1 — Forgotten Temple battle theme (Suno prompt in Section 5)
+    [TODO] Arena 2 — Cursed District battle theme (Suno prompt in Section 5)
+    [TODO] Main Menu theme — calm Chinese instrumental, slow build
+    [TODO] Character select music — light, anticipatory, Chinese style
+    [TODO] Victory sting — short 3-second dramatic resolution
+    [TODO] Defeat sting — short 2-second somber resolution
+
+UI SOUNDS (from Kenney.nl — free):
+    [TODO] Menu hover
+    [TODO] Menu click/confirm
+    [TODO] Character select confirm
+    [TODO] Round start chime
+    [TODO] Timer warning (last 10 seconds — ticking or low beep)
+    [TODO] Room code generated chime
+    [TODO] Opponent connected chime
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 12 — VISUAL STYLE & ART DIRECTION
+════════════════════════════════════════════════════════════════════════════════
+
+OVERALL STYLE   : Realistic — Tekken/Shadow Fight fidelity target
+                  PBR (Physically Based Rendering) materials
+                  High detail characters, grounded environments
+
+COLOUR PALETTE  :
+    Arena 1 (Temple)    : Warm golden dusk, deep stone grey, soft amber
+    Arena 2 (District)  : Cold neon blues and reds, deep concrete grey, rain-wet
+
+LIGHTING        :
+    Arena 1 : Warm directional dusk light from ceiling gaps. Soft ambient fill.
+    Arena 2 : Neon point lights — multiple colours, flickering. No natural light.
+
+POST-PROCESSING (Three.js):
+    Bloom           : Subtle — on neon lights and special move effects
+    Ambient Occlusion: Baked into arena geometry for depth
+    Motion Blur     : Applied to fast attack animations and dash
+    Vignette        : Applied during Rage Art activation
+
+CHARACTER SHADERS:
+    Skin        : PBR with subsurface scattering approximation
+    Cloth       : PBR with normal map for fabric texture
+    Special FX  : Emissive materials for cursed energy, fire, 9 CGPA golden glow
+
+FONT SYSTEM (Google Fonts — all free):
+    Game Logo   : Cinzel Decorative — bold, ancient, dramatic
+    HUD Numbers : Bebas Neue — condensed, clear at small sizes
+    HUD Names   : Rajdhani — modern, semi-condensed, readable
+    Menu Text   : Rajdhani Regular
+    Tutorial    : Inter — clean, maximum readability
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 13 — FREE ASSET COLLECTION MASTER LIST
+════════════════════════════════════════════════════════════════════════════════
+
+CATEGORY            SITE                        COST    NOTES
+─────────────────── ─────────────────────────── ─────── ─────────────────────
+3D Characters       mixamo.com                  Free    Needs Adobe account
+3D Characters       readyplayer.me              Free    Export as .glb
+Animations          mixamo.com                  Free    Full list in Sec 2.4
+FBX→GLB Convert     products.aspose.app         Free    Browser-based
+3D Model Editor     blender.org                 Free    Optional, powerful
+UI Assets           kenney.nl                   Free    Game-ready packs
+UI Icons            game-icons.net              Free    SVG, customisable
+Fonts               fonts.google.com            Free    Use via CSS CDN
+Character Art       firefly.adobe.com           Free    AI generation
+Character Art       ideogram.ai                 Free    Good game art style
+Character Art       bing.com/create             Free    DALL-E powered
+SFX Generation      gensfx.com                  Free    No signup
+SFX Generation      soundfactory.ai             Free    No signup
+SFX Libraries       freesound.org               Free    Account needed
+SFX Libraries       kenney.nl                   Free    Game audio packs
+SFX Libraries       mixkit.co                   Free    No attribution needed
+SFX Libraries       openGameArt.org             Free    Game-specific
+Music Generation    suno.com                    Free    ~50 songs/day
+Music Generation    udio.com                    Free    Limited tier
+Voice Lines         elevenlabs.io               Free    Limited monthly chars
+Voice Lines         play.ht                     Free    Limited tier
+Code Hosting        github.com                  Free    Unlimited repositories
+Game Hosting        pages.github.com            Free    Always free
+Game Hosting        itch.io                     Free    No commission free games
+Game Hosting        netlify.com                 Free    100GB bandwidth/month
+Multiplayer         partykit.io                 Free    Sufficient for friends
+Multiplayer         peerjs.com                  Free    P2P direct connection
+AI Coding           claude.ai                   Free    Best for this project
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 14 — BUILD ORDER (Phase by Phase)
+════════════════════════════════════════════════════════════════════════════════
+
+Follow this exact order. Do not skip phases. Each phase must be working and
+testable before moving to the next. This prevents you from building on top
+of broken foundations.
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 1 — Arena + Character Movement
+────────────────────────────────────────────────────────────────────────────────
+GOAL: Something visible and interactive in the browser
+TASKS:
+    □ Set up Three.js HTML file — runs in browser with no build tools
+    □ Load Arena 1 (Forgotten Temple) 3D environment
+    □ Load one character model (GLB format)
+    □ Implement WASD movement — character walks in 3D space
+    □ Implement jump and double jump (Spacebar)
+    □ Implement dash forward and back (double-tap W/S)
+    □ Implement crouch (Ctrl hold)
+    □ Camera follows character, arena boundaries stop movement
+    □ Basic lighting on arena
+
+HOW TO START: Paste this entire document to Claude Code and say:
+"Build Phase 1 — Three.js HTML file, load Arena 1 environment, load one
+character GLB model, WASD movement, jump, double jump, dash, crouch,
+camera follows character, basic lighting. No combat yet."
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 2 — Combat System (Both Characters, Local)
+────────────────────────────────────────────────────────────────────────────────
+GOAL: Two characters fighting each other on same keyboard (local test)
+TASKS:
+    □ Load second character in same arena
+    □ U / I / O / J attack buttons working with animations
+    □ Hitbox detection — attacks register hits on opponent
+    □ Health bars displayed and going down correctly
+    □ Blocking system (hold back direction)
+    □ Guard meter and guard break
+    □ Mana system — fills on hits, depletes on specials
+    □ Wall splat and wall bounce interactions
+    □ Round timer counting down (75 seconds)
+    □ Round end logic — lower HP or timeout
+    □ Best of 3 round logic
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 3 — All Characters + Specials + Rage Arts
+────────────────────────────────────────────────────────────────────────────────
+GOAL: Full playable roster with all abilities working
+TASKS:
+    □ All 4 characters loaded with their individual animations
+    □ Character-specific move differences implemented
+    □ Leetcode Swarm — symbol projectile system
+    □ 9 CGPA — glowing number projectile
+    □ Inferno Fist — fireball projectile
+    □ Tornado Kick — both characters' versions
+    □ Domain Expansion — arena warp effect for 5 seconds
+    □ Secret Art Chain (Ryomen Raj extended combo)
+    □ Mirror Protocol (Harshita·S passive)
+    □ All Rage Arts triggering and working correctly
+    □ Cinematic camera system for specials
+    □ All sounds integrated (punches, hits, specials, music)
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 4 — Single Player AI
+────────────────────────────────────────────────────────────────────────────────
+GOAL: Playable vs computer opponent
+TASKS:
+    □ AI state machine: Idle, Approach, Pressure, Defend, Punish, Recover
+    □ Easy difficulty — slow, random, no blocking
+    □ Medium difficulty — reacts to combos, uses specials when mana full
+    □ Hard difficulty — punishes unsafe moves, manages mana, dashes safely
+    □ AI correctly uses Rage Arts when applicable
+    □ Victory and defeat screens working
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 5 — UI Shell (All Screens)
+────────────────────────────────────────────────────────────────────────────────
+GOAL: Complete presentable game from menu to match
+TASKS:
+    □ Splash screen with logo animation
+    □ Main menu — Single Player / Multiplayer / Settings
+    □ Character select screen with 3D preview panel
+    □ Arena select screen (2 arena thumbnails)
+    □ Loading screen with tips
+    □ Settings overlay (volume sliders, controls reference)
+    □ Post-match screen (victory, rematch option)
+    □ All fonts applied (Google Fonts CDN)
+    □ All UI sounds integrated
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 6 — Multiplayer
+────────────────────────────────────────────────────────────────────────────────
+GOAL: Two real players fighting online via room code
+TASKS:
+    □ Partykit.io integrated
+    □ Create Room generates 6-character code
+    □ Join Room by entering code works correctly
+    □ Both players see each other's character selections live
+    □ Input sync working — both players see same game state
+    □ Disconnection handling
+    □ Rematch and lobby return working
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 7 — Host, Polish & Ship
+────────────────────────────────────────────────────────────────────────────────
+GOAL: Live link your friends can open and play
+TASKS:
+    □ Upload all files to GitHub repository
+    □ Enable GitHub Pages — get public URL
+    □ Test on multiple browsers (Chrome, Firefox, Edge)
+    □ Test on multiple devices (laptop, phone if possible)
+    □ Performance optimisation — maintain 60 FPS on low-end hardware
+    □ Balance tuning — adjust damage values, timing based on playtesting
+    □ Bug fixing from full playtests with actual friends
+    □ Share link and play
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 15 — HOW TO USE THIS DOCUMENT WITH CLAUDE CODE
+════════════════════════════════════════════════════════════════════════════════
+
+STEP 1  : Come back to Claude (claude.ai) when ready to start coding
+STEP 2  : Paste this ENTIRE document in one message
+STEP 3  : Add at the end: "Build Phase 1 — [describe exactly what you want]"
+STEP 4  : Claude Code will generate the files. Save them to your project folder.
+STEP 5  : Open the HTML file in your browser to test
+STEP 6  : Report any bugs or issues: "This is broken: [describe problem]"
+STEP 7  : Claude fixes it. Test again. Repeat.
+STEP 8  : When Phase 1 is complete and stable, move to Phase 2.
+
+KEY RULES:
+    — Never ask Claude to build everything at once
+    — Always complete and test one phase before starting next
+    — Keep all your project files organised in one folder
+    — Save working versions before asking Claude to make major changes
+    — When something breaks, describe EXACTLY what happens
+
+PROMPT TEMPLATE FOR EACH PHASE:
+    "Here is my complete game document: [paste this file]
+     Phase [X] is complete and working.
+     Now build Phase [X+1]: [specific task description]"
+
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 16 — STUDENT BUILD SCHEDULE (Exam-Friendly)
+════════════════════════════════════════════════════════════════════════════════
+
+This is a fun project — not a deadline. Build at your own pace. Even 1-2 hours
+a week will get you there. Here is a relaxed schedule:
+
+EXAM PERIODS        : Do nothing. Focus on exams. Game will wait.
+
+BETWEEN EXAMS       : Phase 1 and 2 — Movement and combat core
+                      Goal: Something that feels like a game
+
+HOLIDAYS / BREAKS   : Phase 3, 4, 5 — Characters, AI, full UI
+                      Goal: Playable complete single player experience
+
+NEXT FREE STRETCH   : Phase 6 and 7 — Multiplayer and hosting
+                      Goal: Send link to friends and actually play
+
+TOTAL REAL HOURS    : Approximately 40-80 focused hours across all phases
+                      Spread over months = very manageable alongside studies
+
+
+================================================================================
+END OF DOCUMENT — FRACTURE MASTER GDD v1.0
+================================================================================
+All tools listed: 100% free | All hosting: 100% free | Total cost: ₹0
+When ready to build — come back, paste this file, say "Start Phase 1"
+================================================================================

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRACTURE - Combat Phase</title>
+    <link rel="stylesheet" href="index.css?v=24">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <script>
+        // Emergency error tracker
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            const status = document.querySelector('.loading-status');
+            if (status) {
+                status.style.color = '#ff5555';
+                status.innerText = 'ERROR: ' + msg + ' (Line: ' + lineNo + ')';
+            }
+            console.error('GLOBAL ERROR:', msg, url, lineNo, error);
+            return false;
+        };
+
+        // Debug click tracker
+        document.addEventListener('click', (e) => {
+            console.log('[Debug Click] Target:', e.target.id || e.target.className || e.target.tagName, e.target);
+        }, true);
+    </script>
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Menu Background Video (Visible during Phases 3 & 4) -->
+    <video id="menu-bg-video" autoplay loop muted playsinline style="display: none; position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 8000; filter: brightness(0.6);"></video>
+
+    <!-- Phase 1: Initial Video Pre-loader -->
+    <div id="initial-loading-ui" style="display: flex;">
+        <div class="initial-loading-content">
+            <h1 class="logo-text">FRACTURE</h1>
+            <p class="quote-text">"Every battle fought shapes the warrior you become."</p>
+            <div class="grey-bar-bg">
+                <div id="initial-bar-fill"></div>
+            </div>
+            <div id="initial-bar-percent">0%</div>
+            <p class="loading-status">Fetching Cinematic Assets...</p>
+            <button id="btn-ready-start">ENTER ARENA</button>
+        </div>
+    </div>
+
+    <!-- Phase 2.5: Theme Selection -->
+    <div id="theme-selection-ui" style="display: none;">
+        <div class="theme-content">
+            <h1>SELECT ARENA THEME</h1>
+            <div class="theme-cards">
+                <div class="theme-card" id="theme-default" data-theme="default">
+                    <div class="theme-card-inner">
+                        <img src="Assets/background/image_background.jpg" alt="Default Arena">
+                        <div class="theme-overlay"></div>
+                        <div class="theme-info">
+                            <h2>RUINS</h2>
+                            <p>The classic battleground.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="theme-card" id="theme-indian" data-theme="indian">
+                    <div class="theme-card-inner">
+                        <img src="assets/arena_theme/indian/Indian_theme_thumbnail.png" alt="Indian Arena">
+                        <div class="theme-overlay"></div>
+                        <div class="theme-info">
+                            <h2>INDIAN</h2>
+                            <p>Playgrounds of the heritage.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="theme-card" id="theme-chinese" data-theme="chinese">
+                    <div class="theme-card-inner">
+                        <img src="assets/arena_theme/chineese/chineese_theme_thumbnail.png" alt="Chinese Arena">
+                        <div class="theme-overlay"></div>
+                        <div class="theme-info">
+                            <h2>CHINESE</h2>
+                            <p>Mystic oriental landscapes.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 3: Mode Selection -->
+    <div id="mode-selection-ui" style="display: none;">
+        <div class="mode-content">
+            <h1>SELECT GAME MODE</h1>
+            <div class="mode-cards">
+                <button id="btn-mode-ai" class="mode-card active">
+                    <h2>VS AI</h2>
+                    <p>Hone your skills against a bot.</p>
+                </button>
+                <button id="btn-mode-multi" class="mode-card inactive">
+                    <h2>MULTIPLAYER</h2>
+                    <p>Under Development</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 5: Final Character Loading -->
+    <div id="final-loading-ui" style="display: none;">
+        <div class="final-loading-content">
+            <h1>PREPARING ARENA</h1>
+            <p>Loading Fighters...</p>
+            <div class="spinner"></div>
+            <div id="final-loading-percent" style="margin-top: 20px; font-size: 1.2rem; color: #ffd700; letter-spacing: 0.1em;">0%</div>
+        </div>
+    </div>
+    <!-- Combat UI Overlay -->
+    <div id="ui-layer">
+        <div class="hud-top">
+            <!-- Player 1 -->
+            <div class="player-hud p1">
+                <div class="name-tag" id="p1-name">HARSHITA</div>
+                <div class="bars-stack">
+                    <div class="bar-bg health">
+                        <div id="p1-health" class="bar-fill health" style="width: 100%;"></div>
+                    </div>
+                    <div class="bar-bg mana">
+                        <div id="p1-mana" class="bar-fill mana" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vs-badge">VS</div>
+            <div id="match-timer">90</div>
+
+            <!-- Player 2 -->
+            <div class="player-hud p2">
+                <div id="p2-diff-badge" class="diff-badge">MEDIUM</div>
+                <div class="name-tag" id="p2-name">DUMMY</div>
+                <div class="bars-stack">
+                    <div class="bar-bg health">
+                        <div id="p2-health" class="bar-fill health" style="width: 100%;"></div>
+                    </div>
+                    <div class="bar-bg mana">
+                        <div id="p2-mana" class="bar-fill mana" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls-hint">
+            <strong>Movement:</strong> WASD &nbsp;|&nbsp; <strong>Combat:</strong> J (Punch) K (Kick) I (Magic)
+        </div>
+    </div>
+
+    <!-- New Hero Selection Phase (Phase 4) -->
+    <div id="hero-selection-phase" style="display: none; position: fixed; inset: 0; z-index: 9000; background: #050608; color: #e8dcc8;">
+        <div id="atmo-particles"></div>
+        <div id="selection-flash"></div>
+
+        <nav id="topbar-hero">
+            <div id="top-title-hero">⚔ Choose Your Champion</div>
+            <div class="top-dots" id="hero-dots"></div>
+            <div id="hero-back-btn">◀ Back</div>
+        </nav>
+
+        <div id="botbar-hero">
+            <div class="hint-hero">← → Navigate Heroes</div>
+            <div id="hero-counter">HERO <span id="cc-hero">1</span> of <span id="ct-hero">4</span></div>
+            <div class="hint-hero">Keyboard ← → also works</div>
+        </div>
+
+        <button class="arrow-hero" id="al-hero">&#9664;</button>
+        <button class="arrow-hero" id="ar-hero">&#9654;</button>
+
+        <div id="viewport-hero">
+            <div id="track-hero"></div>
+        </div>
+
+        <!-- 3D Preview Modal -->
+        <div id="preview-modal">
+            <div id="mbox-hero">
+                <button id="m-close-hero">✕</button>
+                <div id="m-name-hero">—</div>
+                <div id="m-class-hero">—</div>
+                <div id="m-canvas-wrap-hero">
+                    <canvas id="m-canvas-hero"></canvas>
+                    <div id="m-loading-hero">
+                        <div class="hero-spinner"></div>
+                        <p id="m-load-txt-hero">Loading 3D Model…</p>
+                    </div>
+                </div>
+                <div id="m-hint-hero">🖱 Drag to rotate · Scroll to zoom</div>
+                <div id="m-actions-hero">
+                    <button class="mab-hero mab-close-hero">Close</button>
+                    <button class="mab-hero mab-sel-hero" id="m-sel-hero">Select Hero</button>
+                </div>
+            </div>
+        </div>
+        <div id="hero-toast"></div>
+    </div>
+
+    <!-- Difficulty Selection Overlay -->
+    <div id="difficulty-ui" style="display: none;">
+        <div class="difficulty-content">
+            <h1>SELECT AI INTENSITY</h1>
+            <div class="difficulty-buttons">
+                <button id="btn-easy" class="btn-diff easy">🟢 EASY</button>
+                <button id="btn-medium" class="btn-diff medium">🟡 MEDIUM</button>
+                <button id="btn-hard" class="btn-diff hard">🔴 HARD</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Loading Screen Overlay -->
+    <div id="loading-ui" style="display: none;">
+        <!-- VIDEO BACKGROUND (DOUBLE BUFFERED FOR SEAMLESS SWITCHING) -->
+        <video id="video-bg-1" class="video-layer visible" muted playsinline preload="auto"></video>
+        <video id="video-bg-2" class="video-layer" muted playsinline preload="auto"></video>
+        
+        <!-- OVERLAYS -->
+        <div id="vignette"></div>
+        <div id="particles" aria-hidden="true"></div>
+
+        <!-- GOLDEN FRAME -->
+        <div id="gold-frame" aria-hidden="true">
+            <!-- Corners -->
+            <div class="corner tl">
+                <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#fffacd"/>
+                            <stop offset="40%" stop-color="#ffd700"/>
+                            <stop offset="100%" stop-color="#7a5500"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M4 4 L4 86" stroke="url(#g1)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M4 4 L86 4" stroke="url(#g1)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M14 14 L14 70" stroke="url(#g1)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+                    <path d="M14 14 L70 14" stroke="url(#g1)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+                    <circle cx="4" cy="4" r="4" fill="#fffacd"/>
+                </svg>
+            </div>
+            <div class="corner tr">
+                <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#fffacd"/>
+                            <stop offset="40%" stop-color="#ffd700"/>
+                            <stop offset="100%" stop-color="#7a5500"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M4 4 L4 86" stroke="url(#g2)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M4 4 L86 4" stroke="url(#g2)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M14 14 L14 70" stroke="url(#g2)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+                    <path d="M14 14 L70 14" stroke="url(#g2)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+                    <circle cx="4" cy="4" r="4" fill="#fffacd"/>
+                </svg>
+            </div>
+            <div class="corner bl">
+                <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#fffacd"/>
+                            <stop offset="40%" stop-color="#ffd700"/>
+                            <stop offset="100%" stop-color="#7a5500"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M4 4 L4 86" stroke="url(#g3)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M4 4 L86 4" stroke="url(#g3)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M14 14 L14 70" stroke="url(#g3)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+                    <path d="M14 14 L70 14" stroke="url(#g3)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+                    <circle cx="4" cy="4" r="4" fill="#fffacd"/>
+                </svg>
+            </div>
+            <div class="corner br">
+                <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#fffacd"/>
+                            <stop offset="40%" stop-color="#ffd700"/>
+                            <stop offset="100%" stop-color="#7a5500"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M4 4 L4 86" stroke="url(#g4)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M4 4 L86 4" stroke="url(#g4)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M14 14 L14 70" stroke="url(#g4)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+                    <path d="M14 14 L70 14" stroke="url(#g4)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+                    <circle cx="4" cy="4" r="4" fill="#fffacd"/>
+                </svg>
+            </div>
+
+            <!-- Edge lines -->
+            <div class="edge-line edge-h edge-top"></div>
+            <div class="edge-line edge-h edge-bottom"></div>
+            <div class="edge-line edge-v edge-left"></div>
+            <div class="edge-line edge-v edge-right"></div>
+
+            <!-- Inner frame -->
+            <div class="inner-frame"></div>
+        </div>
+
+        <!-- TITLE -->
+        <div id="title-area">
+            <div id="game-title">FRACTURE</div>
+            <div id="game-subtitle">REVENGE OF THE CURSED</div>
+        </div>
+
+        <!-- TIP TEXT -->
+        <div id="tip-text"></div>
+
+        <!-- LOADING BAR -->
+        <div id="loading-zone">
+            <div id="loading-label">Loading Core Assets</div>
+            <div id="bar-shell">
+                <div id="bar-fill"></div>
+            </div>
+            <div id="bar-percent">0%</div>
+            <!-- Fallback text if 30s ends and assets still loading -->
+            <div id="fallback-text" style="display: none; color: #ff5555; margin-top: 10px; font-size: 0.7rem; letter-spacing: 0.2em;">PLEASE WAIT, STILL LOADING...</div>
+        </div>
+
+        <!-- MUTE BUTTON -->
+        <button id="mute-btn" title="Toggle sound">🔊</button>
+
+        <!-- THEME AUDIO -->
+        <audio id="theme-audio" loop>
+            <source src="Front_end_contents/video_animation_sound.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <!-- Victory Screen Overlay -->
+    <div id="victory-ui" style="display: none;">
+        <div class="victory-content">
+            <h1 id="victory-title">YOU WON!</h1>
+            <div class="victory-buttons">
+                <button id="btn-replay">Replay</button>
+                <button id="btn-exit">Exit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Countdown Overlay -->
+    <div id="countdown-ui" style="display: none;">
+        <h1 id="countdown-text">READY?</h1>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module" src="main.js?v=49"></script>
+</body>
+</html>

@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loading...</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Cinzel', serif;
+  }
+
+  /* ── VIDEO BACKGROUND ── */
+  #video-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  #video-bg.visible { opacity: 1; }
+
+  /* ── DARK VIGNETTE OVERLAY ── */
+  #vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: radial-gradient(ellipse at center,
+      rgba(0,0,0,0.1) 0%,
+      rgba(0,0,0,0.55) 60%,
+      rgba(0,0,0,0.85) 100%);
+    pointer-events: none;
+  }
+
+  /* ── GOLDEN BORDER FRAME ── */
+  #gold-frame {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* Corner ornaments */
+  .corner {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+  }
+  .corner svg { width: 100%; height: 100%; }
+  .corner.tl { top: 12px; left: 12px; }
+  .corner.tr { top: 12px; right: 12px; transform: scaleX(-1); }
+  .corner.bl { bottom: 12px; left: 12px; transform: scaleY(-1); }
+  .corner.br { bottom: 12px; right: 12px; transform: scale(-1,-1); }
+
+  /* Edge lines — top, bottom, left, right */
+  .edge-line {
+    position: absolute;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      #b8860b 15%,
+      #ffd700 40%,
+      #fffacd 50%,
+      #ffd700 60%,
+      #b8860b 85%,
+      transparent 100%);
+    opacity: 0.85;
+  }
+  .edge-h { height: 2px; left: 90px; right: 90px; }
+  .edge-v {
+    width: 2px;
+    top: 90px; bottom: 90px;
+    background: linear-gradient(180deg,
+      transparent 0%,
+      #b8860b 15%,
+      #ffd700 40%,
+      #fffacd 50%,
+      #ffd700 60%,
+      #b8860b 85%,
+      transparent 100%);
+  }
+  .edge-top    { top: 18px; }
+  .edge-bottom { bottom: 18px; }
+  .edge-left   { left: 18px; }
+  .edge-right  { right: 18px; }
+
+  /* Inner thin line */
+  .inner-frame {
+    position: absolute;
+    top: 28px; bottom: 28px; left: 28px; right: 28px;
+    border: 1px solid rgba(218,165,32,0.35);
+    pointer-events: none;
+  }
+
+  /* ── SHIMMER ANIMATION ON BORDERS ── */
+  @keyframes shimmer {
+    0%   { opacity: 0.6; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+  .edge-line, .corner { animation: shimmer 3s ease-in-out infinite; }
+
+  /* ── TITLE AREA ── */
+  #title-area {
+    position: absolute;
+    top: 38px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    text-align: center;
+    width: 100%;
+    pointer-events: none;
+  }
+
+  #game-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.6rem, 4vw, 3.2rem);
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow:
+      0 0 20px rgba(255,215,0,0.8),
+      0 0 40px rgba(255,165,0,0.4),
+      2px 2px 0px rgba(0,0,0,0.9);
+    letter-spacing: 0.15em;
+    line-height: 1.1;
+  }
+
+  #game-subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.55rem, 1.2vw, 0.85rem);
+    color: #c8a84b;
+    letter-spacing: 0.45em;
+    margin-top: 6px;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  /* ── BOTTOM LOADING ZONE ── */
+  #loading-zone {
+    position: absolute;
+    bottom: 46px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    width: min(600px, 70vw);
+    text-align: center;
+  }
+
+  #loading-label {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.55rem, 1vw, 0.75rem);
+    color: #c8a84b;
+    letter-spacing: 0.4em;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  /* Bar outer shell */
+  #bar-shell {
+    position: relative;
+    height: 10px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(218,165,32,0.55);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 0 12px rgba(255,215,0,0.15), inset 0 0 6px rgba(0,0,0,0.5);
+  }
+
+  /* The actual fill */
+  #bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg,
+      #7a5500 0%,
+      #b8860b 20%,
+      #ffd700 45%,
+      #fffacd 55%,
+      #ffd700 70%,
+      #b8860b 90%,
+      #7a5500 100%);
+    background-size: 200% 100%;
+    border-radius: 5px;
+    transition: width 0.25s ease;
+    animation: barShine 1.8s linear infinite;
+    box-shadow: 0 0 8px rgba(255,215,0,0.7);
+  }
+
+  @keyframes barShine {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Percentage text */
+  #bar-percent {
+    margin-top: 8px;
+    font-size: clamp(0.6rem, 1.1vw, 0.8rem);
+    color: #ffd700;
+    letter-spacing: 0.3em;
+    font-weight: 400;
+    text-shadow: 0 0 8px rgba(255,215,0,0.5);
+  }
+
+  /* ── TIPS / FLAVOR TEXT ── */
+  #tip-text {
+    position: absolute;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    width: min(700px, 75vw);
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.55rem, 0.9vw, 0.72rem);
+    color: rgba(200,168,75,0.75);
+    letter-spacing: 0.12em;
+    line-height: 1.6;
+    transition: opacity 0.8s ease;
+  }
+
+  /* ── MUTE BUTTON ── */
+  #mute-btn {
+    position: absolute;
+    top: 24px;
+    right: 50px;
+    z-index: 5;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(218,165,32,0.5);
+    color: #ffd700;
+    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  #mute-btn:hover {
+    background: rgba(218,165,32,0.15);
+    border-color: #ffd700;
+  }
+
+  /* ── CLIP TRANSITION ── */
+  @keyframes clipFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── AUDIO UNLOCK OVERLAY ── */
+  #unlock-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0,0,0,0.82);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    transition: opacity 0.6s ease;
+  }
+  #unlock-overlay p {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.8rem, 1.5vw, 1.1rem);
+    color: rgba(200,168,75,0.85);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+  #unlock-btn {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+    color: #000;
+    background: linear-gradient(135deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b);
+    border: none;
+    padding: 16px 52px;
+    letter-spacing: 0.25em;
+    cursor: pointer;
+    border-radius: 3px;
+    text-transform: uppercase;
+    box-shadow: 0 0 24px rgba(255,215,0,0.4), 0 0 60px rgba(255,165,0,0.15);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  #unlock-btn:hover {
+    transform: scale(1.04);
+    box-shadow: 0 0 36px rgba(255,215,0,0.7), 0 0 80px rgba(255,165,0,0.25);
+  }
+  #unlock-btn:active { transform: scale(0.98); }
+
+  /* ── CONTINUE OVERLAY (shown when loading hits 100%) ── */
+  #continue-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 9;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    background: rgba(0,0,0,0.65);
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  #continue-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.2rem, 3vw, 2.2rem);
+    color: #ffd700;
+    letter-spacing: 0.2em;
+    text-shadow: 0 0 30px rgba(255,215,0,0.7), 0 0 60px rgba(255,165,0,0.3);
+    text-transform: uppercase;
+    animation: pulseGold 2s ease-in-out infinite;
+  }
+  @keyframes pulseGold {
+    0%, 100% { text-shadow: 0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,165,0,0.2); }
+    50%       { text-shadow: 0 0 40px rgba(255,215,0,1),   0 0 80px rgba(255,165,0,0.5); }
+  }
+  #continue-sub {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.6rem, 1.1vw, 0.8rem);
+    color: rgba(200,168,75,0.75);
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+  }
+  #continue-btn {
+    margin-top: 12px;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(0.85rem, 1.6vw, 1.1rem);
+    color: #000;
+    background: linear-gradient(135deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b);
+    border: none;
+    padding: 14px 48px;
+    letter-spacing: 0.25em;
+    cursor: pointer;
+    border-radius: 3px;
+    text-transform: uppercase;
+    box-shadow: 0 0 24px rgba(255,215,0,0.45);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    animation: pulseBtn 2.2s ease-in-out infinite;
+  }
+  @keyframes pulseBtn {
+    0%, 100% { box-shadow: 0 0 20px rgba(255,215,0,0.4); }
+    50%       { box-shadow: 0 0 50px rgba(255,215,0,0.9), 0 0 90px rgba(255,165,0,0.35); }
+  }
+  #continue-btn:hover  { transform: scale(1.05); }
+  #continue-btn:active { transform: scale(0.97); }
+
+  /* ── PARTICLE DUST (optional flair) ── */
+  #particles {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: rgba(255,215,0,0.6);
+    border-radius: 50%;
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(100vh) translateX(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.4; }
+    100% { transform: translateY(-5vh) translateX(var(--drift)); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUDIO UNLOCK OVERLAY -->
+<div id="unlock-overlay">
+  <p>Click anywhere to begin</p>
+  <button id="unlock-btn">Enter the World</button>
+</div>
+
+<!-- CONTINUE OVERLAY (shown at 100%) -->
+<div id="continue-overlay">
+  <div id="continue-title">Your World Awaits</div>
+  <div id="continue-sub">Loading Complete</div>
+  <button id="continue-btn" onclick="onContinue()">Continue to Game</button>
+</div>
+
+<!-- VIDEO BACKGROUND -->
+<video id="video-bg" muted playsinline preload="auto"></video>
+
+<!-- OVERLAYS -->
+<div id="vignette"></div>
+<div id="particles" aria-hidden="true"></div>
+
+<!-- GOLDEN FRAME -->
+<div id="gold-frame" aria-hidden="true">
+
+  <!-- Corners -->
+  <div class="corner tl">
+    <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fffacd"/>
+          <stop offset="40%" stop-color="#ffd700"/>
+          <stop offset="100%" stop-color="#7a5500"/>
+        </linearGradient>
+      </defs>
+      <path d="M4 4 L4 86" stroke="url(#g1)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M4 4 L86 4" stroke="url(#g1)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M14 14 L14 70" stroke="url(#g1)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      <path d="M14 14 L70 14" stroke="url(#g1)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      <!-- gem -->
+      <polygon points="4,4 20,4 4,20" fill="#ffd700" opacity="0.7"/>
+      <circle cx="4" cy="4" r="4" fill="#fffacd"/>
+      <!-- small diamonds along edge -->
+      <rect x="28" y="1.5" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 30.5 4)"/>
+      <rect x="52" y="1.5" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 54.5 4)"/>
+      <rect x="1.5" y="28" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 4 30.5)"/>
+      <rect x="1.5" y="52" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 4 54.5)"/>
+    </svg>
+  </div>
+  <div class="corner tr">
+    <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fffacd"/>
+          <stop offset="40%" stop-color="#ffd700"/>
+          <stop offset="100%" stop-color="#7a5500"/>
+        </linearGradient>
+      </defs>
+      <path d="M4 4 L4 86" stroke="url(#g2)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M4 4 L86 4" stroke="url(#g2)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M14 14 L14 70" stroke="url(#g2)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      <path d="M14 14 L70 14" stroke="url(#g2)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      <polygon points="4,4 20,4 4,20" fill="#ffd700" opacity="0.7"/>
+      <circle cx="4" cy="4" r="4" fill="#fffacd"/>
+      <rect x="28" y="1.5" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 30.5 4)"/>
+      <rect x="52" y="1.5" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 54.5 4)"/>
+      <rect x="1.5" y="28" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 4 30.5)"/>
+      <rect x="1.5" y="52" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 4 54.5)"/>
+    </svg>
+  </div>
+  <div class="corner bl">
+    <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fffacd"/>
+          <stop offset="40%" stop-color="#ffd700"/>
+          <stop offset="100%" stop-color="#7a5500"/>
+        </linearGradient>
+      </defs>
+      <path d="M4 4 L4 86" stroke="url(#g3)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M4 4 L86 4" stroke="url(#g3)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M14 14 L14 70" stroke="url(#g3)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      <path d="M14 14 L70 14" stroke="url(#g3)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      <polygon points="4,4 20,4 4,20" fill="#ffd700" opacity="0.7"/>
+      <circle cx="4" cy="4" r="4" fill="#fffacd"/>
+      <rect x="28" y="1.5" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 30.5 4)"/>
+      <rect x="52" y="1.5" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 54.5 4)"/>
+      <rect x="1.5" y="28" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 4 30.5)"/>
+      <rect x="1.5" y="52" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 4 54.5)"/>
+    </svg>
+  </div>
+  <div class="corner br">
+    <svg viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fffacd"/>
+          <stop offset="40%" stop-color="#ffd700"/>
+          <stop offset="100%" stop-color="#7a5500"/>
+        </linearGradient>
+      </defs>
+      <path d="M4 4 L4 86" stroke="url(#g4)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M4 4 L86 4" stroke="url(#g4)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M14 14 L14 70" stroke="url(#g4)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      <path d="M14 14 L70 14" stroke="url(#g4)" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      <polygon points="4,4 20,4 4,20" fill="#ffd700" opacity="0.7"/>
+      <circle cx="4" cy="4" r="4" fill="#fffacd"/>
+      <rect x="28" y="1.5" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 30.5 4)"/>
+      <rect x="52" y="1.5" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 54.5 4)"/>
+      <rect x="1.5" y="28" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 4 30.5)"/>
+      <rect x="1.5" y="52" width="5" height="5" fill="#ffd700" opacity="0.6" transform="rotate(45 4 54.5)"/>
+    </svg>
+  </div>
+
+  <!-- Edge lines -->
+  <div class="edge-line edge-h edge-top"></div>
+  <div class="edge-line edge-h edge-bottom"></div>
+  <div class="edge-line edge-v edge-left"></div>
+  <div class="edge-line edge-v edge-right"></div>
+
+  <!-- Inner frame -->
+  <div class="inner-frame"></div>
+</div>
+
+<!-- TITLE -->
+<div id="title-area">
+  <div id="game-title">YOUR GAME TITLE</div>
+  <div id="game-subtitle">An Epic Adventure Awaits</div>
+</div>
+
+<!-- TIP TEXT -->
+<div id="tip-text"></div>
+
+<!-- LOADING BAR -->
+<div id="loading-zone">
+  <div id="loading-label">Loading</div>
+  <div id="bar-shell">
+    <div id="bar-fill"></div>
+  </div>
+  <div id="bar-percent">0%</div>
+</div>
+
+<!-- MUTE BUTTON -->
+<button id="mute-btn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+
+<!-- THEME AUDIO -->
+<audio id="theme-audio" loop>
+  <source src="theme_3.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+(function() {
+
+  /* ────────────────────────────────────────────
+     CONFIG — edit these to match your game
+  ──────────────────────────────────────────── */
+  const CONFIG = {
+    // Path to video folder (relative to this HTML file)
+    videoFolder: 'Front_end_contents/',
+
+    // All 13 clips
+    clips: [
+      '1.mp4','2.mp4','3.mp4','4.mp4','5.mp4',
+      '6.mp4','7.mp4','8.mp4','9.mp4','10.mp4',
+      '11.mp4','12.mp4','13.mp4'
+    ],
+
+    // How long each clip plays (ms)
+    clipDuration: 3000,
+
+    // Simulated loading duration (ms); replace with real progress if hooked to your loader
+    loadDuration: 30000,
+
+    // Audio volume (0–1)
+    audioVolume: 0.55,
+
+    // Fade audio in over this many ms
+    audioFadeMs: 2500,
+
+    // Tip / lore strings shown at bottom
+    tips: [
+      'Every legend begins with a single step.',
+      'The world holds secrets older than memory.',
+      'Your choices echo across time.',
+      'Courage is not the absence of fear — it is the will to act.',
+      'The greatest treasures are never found on maps.',
+      'In darkness, the light you carry matters most.',
+      'Every battle fought shapes the warrior you become.',
+      'Ancient powers stir beneath the surface.',
+      'Not all who wander are lost — some are searching.',
+      'The story is yours. Make it worthy of legend.',
+    ],
+  };
+
+  /* ── Elements ── */
+  const video     = document.getElementById('video-bg');
+  const barFill   = document.getElementById('bar-fill');
+  const barPct    = document.getElementById('bar-percent');
+  const tipEl     = document.getElementById('tip-text');
+  const audio     = document.getElementById('theme-audio');
+  const muteBtn   = document.getElementById('mute-btn');
+  const particles = document.getElementById('particles');
+
+  /* ── State ── */
+  let currentClipIdx = -1;
+  let clipTimer = null;
+  let loadProgress = 0;
+  let loadStart = null;
+  let muted = false;
+
+  /* ── Shuffle helper ── */
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  /* ── Clip queue ── */
+  let clipQueue = shuffle(CONFIG.clips);
+  let queueIdx = 0;
+
+  function nextClip() {
+    if (queueIdx >= clipQueue.length) {
+      clipQueue = shuffle(CONFIG.clips);
+      queueIdx = 0;
+    }
+    return clipQueue[queueIdx++];
+  }
+
+  /* ── Play a clip ── */
+  function playClip() {
+    const clip = nextClip();
+    video.classList.remove('visible');
+
+    setTimeout(() => {
+      video.src = CONFIG.videoFolder + clip;
+      video.currentTime = 0;
+      video.play().then(() => {
+        video.classList.add('visible');
+      }).catch(() => {
+        // Autoplay blocked or file missing — keep cycling
+      });
+    }, 300);
+
+    clipTimer = setTimeout(playClip, CONFIG.clipDuration);
+  }
+
+  /* ── Loading bar (simulated; replace internals with real loader ── */
+  function updateBar(ts) {
+    if (!loadStart) loadStart = ts;
+    const elapsed = ts - loadStart;
+    loadProgress = Math.min(elapsed / CONFIG.loadDuration, 1);
+
+    // Ease: fast start, slow finish (mimics real loading feel)
+    const eased = loadProgress < 0.5
+      ? 2 * loadProgress * loadProgress
+      : 1 - Math.pow(-2 * loadProgress + 2, 2) / 2;
+
+    const pct = Math.round(eased * 100);
+    barFill.style.width = pct + '%';
+    barPct.textContent = pct + '%';
+
+    if (loadProgress < 1) {
+      requestAnimationFrame(updateBar);
+    } else {
+      barPct.textContent = '100%';
+      onLoadComplete();
+    }
+  }
+
+  /* ── Tips rotation ── */
+  let tipIdx = 0;
+  const shuffledTips = shuffle(CONFIG.tips);
+
+  function showNextTip() {
+    tipEl.style.opacity = 0;
+    setTimeout(() => {
+      tipEl.textContent = shuffledTips[tipIdx % shuffledTips.length];
+      tipEl.style.opacity = 1;
+      tipIdx++;
+    }, 600);
+  }
+
+  /* ── Mute toggle ── */
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    audio.muted = muted;
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+  });
+
+  /* ── Particles ── */
+  function spawnParticles() {
+    const count = 28;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
+      const dur = 6 + Math.random() * 10;
+      p.style.animationDuration = dur + 's';
+      p.style.animationDelay = (Math.random() * dur) + 's';
+      p.style.opacity = Math.random() * 0.6 + 0.2;
+      const size = Math.random() * 3 + 1;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      particles.appendChild(p);
+    }
+  }
+
+  /* ── Audio fade-in (called after unlock) ── */
+  function startAudioFade() {
+    audio.volume = 0;
+    audio.play().then(() => {
+      const step = CONFIG.audioVolume / (CONFIG.audioFadeMs / 50);
+      const iv = setInterval(() => {
+        if (audio.volume + step >= CONFIG.audioVolume) {
+          audio.volume = CONFIG.audioVolume;
+          clearInterval(iv);
+        } else {
+          audio.volume += step;
+        }
+      }, 50);
+    }).catch(err => console.warn('Audio play failed:', err));
+  }
+
+  /* ── Load complete — show CONTINUE screen ── */
+  function onLoadComplete() {
+    // Stop clip cycling
+    clearTimeout(clipTimer);
+
+    // Stop bar
+    barFill.style.width = '100%';
+    barPct.textContent = '100%';
+    document.getElementById('loading-label').textContent = 'Ready';
+
+    // Show continue overlay
+    const cont = document.getElementById('continue-overlay');
+    cont.style.display = 'flex';
+    // Small delay then fade in
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { cont.style.opacity = '1'; });
+    });
+  }
+
+  /* ── INIT ── */
+  function init() {
+    spawnParticles();
+    showNextTip();
+    setInterval(showNextTip, 4500);
+
+    // ── AUDIO UNLOCK OVERLAY ──
+    // Browsers require a user gesture before playing audio.
+    // We show a fullscreen click-to-start overlay that:
+    //   1. Starts the audio
+    //   2. Starts the video clips & loading bar
+    const unlockOverlay = document.getElementById('unlock-overlay');
+    const unlockBtn     = document.getElementById('unlock-btn');
+
+    function unlock() {
+      // Fade out unlock overlay
+      unlockOverlay.style.opacity = '0';
+      setTimeout(() => { unlockOverlay.style.display = 'none'; }, 600);
+
+      // Start everything
+      startAudioFade();
+      playClip();
+      requestAnimationFrame(updateBar);
+    }
+
+    // Try silent autoplay — some browsers allow it
+    audio.volume = 0;
+    audio.play().then(() => {
+      // Autoplay allowed — skip overlay, start immediately
+      unlockOverlay.style.display = 'none';
+      audio.volume = 0; // reset; fadeAudioIn will ramp up
+      startAudioFade();
+      playClip();
+      requestAnimationFrame(updateBar);
+    }).catch(() => {
+      // Blocked — show the click overlay
+      unlockBtn.addEventListener('click', unlock);
+      // Also allow any keypress to unlock
+      document.addEventListener('keydown', function onKey() {
+        unlock();
+        document.removeEventListener('keydown', onKey);
+      });
+    });
+  }
+
+  /* ── Continue button handler (global so onclick="" can reach it) ── */
+  window.onContinue = function() {
+    // Fade audio out
+    const fadeOut = setInterval(() => {
+      if (audio.volume > 0.04) {
+        audio.volume = Math.max(0, audio.volume - 0.04);
+      } else {
+        audio.volume = 0;
+        audio.pause();
+        clearInterval(fadeOut);
+      }
+    }, 60);
+
+    // Fade screen out
+    document.body.style.transition = 'opacity 1.2s ease';
+    document.body.style.opacity = '0';
+
+    setTimeout(() => {
+      // ── Hook your Three.js game entry here ──
+      // e.g. window.__GAME__.start()
+      // e.g. window.location.href = 'game.html'
+      console.log('✅ Loading complete — launch your Three.js game here!');
+    }, 1400);
+  };
+
+  init();
+
+})();
+</script>
+</body>
+</html>
