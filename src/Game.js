@@ -366,9 +366,7 @@ export class Game {
 
     _selectTheme(theme) {
         this.activeTheme = theme;
-        if (window.va) {
-            window.va('event', { name: 'arena_selection', data: { theme: theme } });
-        }
+        fetch(`/api/track?event=arena_selection&data=${encodeURIComponent(JSON.stringify({ theme: theme }))}`).catch(() => {});
         this.audioManager.setTheme(theme);
         this.audioManager.playMenuMusic(); // Start IMMEDIATELY on click to satisfy browser security
         
@@ -567,9 +565,7 @@ export class Game {
         const hero = HERO_CARDS_DATA[id];
         this.selectedP1Key = hero.key;
 
-        if (window.va) {
-            window.va('event', { name: 'hero_selection', data: { hero: hero.name } });
-        }
+        fetch(`/api/track?event=hero_selection&data=${encodeURIComponent(JSON.stringify({ hero: hero.name }))}`).catch(() => {});
 
         const toast = document.getElementById('hero-toast');
         if (toast) {
@@ -1050,15 +1046,7 @@ export class Game {
         this.aiDifficulty = difficulty;
         this._matchTimer = 90; // Reset timer for the match
 
-        if (window.va) {
-            window.va('event', {
-                name: 'match_start',
-                data: {
-                    player_character: this.selectedP1Key || 'unknown',
-                    difficulty: difficulty
-                }
-            });
-        }
+        fetch(`/api/track?event=match_start&data=${encodeURIComponent(JSON.stringify({ player_character: this.selectedP1Key || 'unknown', difficulty: difficulty }))}`).catch(() => {});
 
         console.log(`[Game] Starting 1v1 Match | Fighter: ${this.selectedP1Key.toUpperCase()} | AI: ${difficulty.toUpperCase()}`);
 
@@ -1160,17 +1148,7 @@ export class Game {
     showVictoryScreen(winnerName) {
         this.audioManager.fadeToSilence(); // Stop battle music gracefully
         
-        if (window.va) {
-            window.va('event', {
-                name: 'match_result',
-                data: {
-                    winner: winnerName.includes('YOU') ? 'Player' : 'AI',
-                    winner_name: winnerName,
-                    difficulty: this.aiDifficulty || 'unknown',
-                    player_character: this.selectedP1Key || 'unknown'
-                }
-            });
-        }
+        fetch(`/api/track?event=match_result&data=${encodeURIComponent(JSON.stringify({ winner: winnerName.includes('YOU') ? 'Player' : 'AI', winner_name: winnerName, difficulty: this.aiDifficulty || 'unknown', player_character: this.selectedP1Key || 'unknown' }))}`).catch(() => {});
 
         setTimeout(() => {
             const ui = document.getElementById('victory-ui');
