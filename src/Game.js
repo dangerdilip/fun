@@ -366,6 +366,9 @@ export class Game {
 
     _selectTheme(theme) {
         this.activeTheme = theme;
+        if (window.va) {
+            window.va('event', { name: 'arena_selection', data: { theme: theme } });
+        }
         this.audioManager.setTheme(theme);
         this.audioManager.playMenuMusic(); // Start IMMEDIATELY on click to satisfy browser security
         
@@ -563,6 +566,10 @@ export class Game {
         if (e) e.stopPropagation();
         const hero = HERO_CARDS_DATA[id];
         this.selectedP1Key = hero.key;
+
+        if (window.va) {
+            window.va('event', { name: 'hero_selection', data: { hero: hero.name } });
+        }
 
         const toast = document.getElementById('hero-toast');
         if (toast) {
@@ -1042,6 +1049,17 @@ export class Game {
         this.currentPhase = 5;
         this.aiDifficulty = difficulty;
         this._matchTimer = 90; // Reset timer for the match
+
+        if (window.va) {
+            window.va('event', {
+                name: 'match_start',
+                data: {
+                    player_character: this.selectedP1Key || 'unknown',
+                    difficulty: difficulty
+                }
+            });
+        }
+
         console.log(`[Game] Starting 1v1 Match | Fighter: ${this.selectedP1Key.toUpperCase()} | AI: ${difficulty.toUpperCase()}`);
 
         const finalLoadUi = document.getElementById('final-loading-ui');
@@ -1142,6 +1160,18 @@ export class Game {
     showVictoryScreen(winnerName) {
         this.audioManager.fadeToSilence(); // Stop battle music gracefully
         
+        if (window.va) {
+            window.va('event', {
+                name: 'match_result',
+                data: {
+                    winner: winnerName.includes('YOU') ? 'Player' : 'AI',
+                    winner_name: winnerName,
+                    difficulty: this.aiDifficulty || 'unknown',
+                    player_character: this.selectedP1Key || 'unknown'
+                }
+            });
+        }
+
         setTimeout(() => {
             const ui = document.getElementById('victory-ui');
             const title = document.getElementById('victory-title');
