@@ -1,4 +1,6 @@
-export default function handler(req, res) {
+import { saveLog } from './_db.js';
+
+export default async function handler(req, res) {
   // Support both GET query parameters and POST request bodies for ultimate compatibility
   const event = req.query.event || (req.body && req.body.event) || 'Unknown';
   
@@ -25,6 +27,19 @@ export default function handler(req, res) {
   // Print a clear, premium log inside the Vercel Logs tab
   console.log(`🎮 [GAME EVENT] Event: ${event.toUpperCase()} | Info: ${JSON.stringify(data)} | Player Location: ${city}, ${region}, ${country}`);
 
+  // Persist to Vercel KV for 30+ day premium dashboard logs
+  await saveLog({
+    timestamp: new Date().toISOString(),
+    type: 'track',
+    event,
+    data,
+    country,
+    region,
+    city,
+    userAgent: req.headers['user-agent'] || 'Unknown'
+  });
+
   // Return a success response
   res.status(200).json({ success: true });
 }
+

@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fracture | Omnilogs Premium Dashboard</title>
+  <meta name="description" content="Secure, high-fidelity real-time administrative logs and game analytics for the Fracture game universe.">
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js for beautiful analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #06070a;
+      --bg-card: rgba(15, 18, 30, 0.45);
+      --bg-card-hover: rgba(22, 26, 43, 0.65);
+      --border-color: rgba(255, 255, 255, 0.05);
+      --border-hover: rgba(99, 102, 241, 0.2);
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      
+      --accent-indigo: #6366f1;
+      --accent-cyan: #06b6d4;
+      --accent-violet: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-green: #10b981;
+      
+      --glow-indigo: rgba(99, 102, 241, 0.15);
+      --glow-cyan: rgba(6, 182, 212, 0.15);
+      --font-outfit: 'Outfit', sans-serif;
+      --font-space: 'Space Grotesk', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: var(--font-outfit);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 45%);
+      background-attachment: fixed;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-dark);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-indigo);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Header styling */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-logo i {
+      font-size: 1.25rem;
+      color: white;
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-space);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      background: linear-gradient(to right, #ffffff, #a5b4fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Buttons */
+    .btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-family: var(--font-outfit);
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+      border: none;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+      filter: brightness(1.1);
+    }
+
+    .btn-success {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: var(--accent-green);
+    }
+
+    .btn-success:hover {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--accent-green);
+    }
+
+    .btn-live {
+      position: relative;
+      padding-left: 2.2rem;
+    }
+
+    .btn-live::before {
+      content: '';
+      position: absolute;
+      left: 1.2rem;
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-green);
+    }
+
+    .btn-live.active::before {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(0.9);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.4);
+        opacity: 0.4;
+      }
+      100% {
+        transform: scale(0.9);
+        opacity: 1;
+      }
+    }
+
+    /* Glassmorphic Cards */
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+    }
+
+    /* Grid Layouts */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .stat-icon.blue {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--accent-indigo);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .stat-icon.cyan {
+      background: rgba(6, 182, 212, 0.1);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    .stat-icon.amber {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .stat-icon.green {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .stat-info {
+      flex: 1;
+    }
+
+    .stat-title {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-family: var(--font-space);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    /* Charts Panel */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 968px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card h3 {
+      font-family: var(--font-space);
+      font-size: 1.1rem;
+      margin-bottom: 1.25rem;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 260px;
+      width: 100%;
+    }
+
+    /* Alert Boxes */
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #fbd38d;
+    }
+
+    .alert i {
+      font-size: 1.25rem;
+    }
+
+    .alert-title {
+      font-weight: 600;
+      margin-bottom: 0.15rem;
+    }
+
+    /* Logs View Table Styling */
+    .logs-panel {
+      margin-top: 1rem;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .panel-title {
+      font-family: var(--font-space);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .filters-wrapper {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.65rem 1rem 0.65rem 2.5rem;
+      color: white;
+      font-family: var(--font-outfit);
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .search-input:focus {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+    }
+
+    .filter-select {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.65rem 2.2rem 0.65rem 1rem;
+      color: white;
+      font-family: var(--font-outfit);
+      font-size: 0.9rem;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      background-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    .filter-select:focus {
+      border-color: var(--accent-indigo);
+    }
+
+    /* Custom Tables */
+    .logs-table-container {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      background: rgba(5, 7, 12, 0.4);
+    }
+
+    .logs-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .logs-table th {
+      background: rgba(255, 255, 255, 0.02);
+      padding: 1rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--font-space);
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .logs-table td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    .logs-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .logs-table tr {
+      transition: background-color 0.2s;
+    }
+
+    .logs-table tr.clickable {
+      cursor: pointer;
+    }
+
+    .logs-table tr.clickable:hover {
+      background-color: rgba(255, 255, 255, 0.015);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-locate {
+      background: rgba(6, 182, 212, 0.1);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    .badge-track {
+      background: rgba(139, 92, 246, 0.1);
+      color: var(--accent-violet);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .badge-error {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--accent-red);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    /* Details Panel */
+    .detail-row {
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .detail-container {
+      padding: 1.25rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      border-left: 3px solid var(--accent-indigo);
+      background-color: rgba(99, 102, 241, 0.02);
+      overflow-x: auto;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .detail-item-title {
+      font-weight: 600;
+      color: white;
+      margin-bottom: 0.25rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .detail-item-value {
+      word-break: break-all;
+    }
+
+    .json-pre {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.75rem;
+      color: #818cf8;
+      overflow-x: auto;
+      max-height: 250px;
+    }
+
+    /* Security Gate Modal / Backdrop */
+    .gate-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-dark);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s;
+    }
+
+    .gate-card {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      padding: 2.5rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .gate-icon {
+      width: 68px;
+      height: 68px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 1.75rem;
+      color: var(--accent-indigo);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+    }
+
+    .gate-card h2 {
+      font-family: var(--font-space);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .gate-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+      text-align: left;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: white;
+      font-family: var(--font-outfit);
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+    }
+
+    .gate-error {
+      color: var(--accent-red);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    /* Setup Guide Container */
+    .setup-container {
+      display: none;
+      text-align: center;
+      padding: 3rem;
+      max-width: 600px;
+      margin: 4rem auto;
+    }
+
+    .setup-icon {
+      font-size: 3rem;
+      color: var(--accent-amber);
+      margin-bottom: 1.5rem;
+    }
+
+    .setup-container h2 {
+      font-family: var(--font-space);
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .setup-container p {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .setup-steps {
+      text-align: left;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .setup-steps li {
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+      margin-left: 1.25rem;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .setup-steps li strong {
+      color: var(--accent-cyan);
+    }
+
+    /* Loader */
+    .loader-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 5rem 0;
+    }
+
+    .loader {
+      border: 3px solid rgba(255, 255, 255, 0.05);
+      border-top: 3px solid var(--accent-indigo);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text-secondary);
+    }
+
+    .empty-state i {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+    }
+
+    /* Utility classes */
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    
+    .text-indigo { color: var(--accent-indigo); }
+    .text-cyan { color: var(--accent-cyan); }
+    .text-amber { color: var(--accent-amber); }
+    .text-green { color: var(--accent-green); }
+
+    .glow-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🔒 SECURITY AUTHENTICATION GATE -->
+  <div id="gateOverlay" class="gate-overlay">
+    <div class="card gate-card">
+      <div class="gate-icon">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h2>Omnilogs Admin Gate</h2>
+      <p>Please authorize access to the Fracture Game universe analytics platform.</p>
+      
+      <form id="gateForm">
+        <div class="form-group">
+          <label class="form-label" for="apiBaseUrl">API Server Base</label>
+          <input type="text" id="apiBaseUrl" class="form-input" placeholder="Current Domain" value="">
+          <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.25rem;">
+            Leave empty for Vercel production deployment.
+          </span>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="adminPassword">Administrative Password</label>
+          <input type="password" id="adminPassword" class="form-input" placeholder="••••••••" required>
+          <div id="gateError" class="gate-error">Invalid password credentials. Please try again.</div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+          <i class="fa-solid fa-unlock-keyhole"></i> Authorize Connection
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ⚙️ DATABASE UNCONFIGURED SETUP GUIDE -->
+  <div id="setupContainer" class="setup-container">
+    <div class="setup-icon">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+    </div>
+    <h2>Vercel KV Store Setup Required</h2>
+    <p>Your database endpoint was reached successfully, but Vercel KV is not linked to your project yet.</p>
+    
+    <div class="setup-steps">
+      <ol>
+        <li>Go to your <strong>Vercel Project Dashboard</strong>.</li>
+        <li>Select the <strong>"Storage"</strong> tab in the navigation menu.</li>
+        <li>Click <strong>"Create Database"</strong> and choose <strong>"KV (Redis)"</strong>.</li>
+        <li>Follow the 1-click prompt to link it to this <strong>fun</strong> project.</li>
+        <li>Vercel will automatically inject <code>KV_REST_API_URL</code> and <code>KV_REST_API_TOKEN</code>!</li>
+        <li>Redeploy or wait for Vercel functions to sync, then refresh this page!</li>
+      </ol>
+    </div>
+    
+    <button onclick="window.location.reload()" class="btn btn-primary">
+      <i class="fa-solid fa-arrows-rotate"></i> Check Connection Again
+    </button>
+  </div>
+
+  <!-- 📊 MASTER DASHBOARD INTERFACE -->
+  <div id="dashboardApp" class="container" style="display: none;">
+    
+    <!-- HEADER -->
+    <header>
+      <div class="brand">
+        <div class="brand-logo">
+          <i class="fa-solid fa-gamepad"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Fracture</h1>
+          <p>Omnilogs Analytics Console</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="liveToggle" class="btn btn-live active" onclick="toggleAutoRefresh()">
+          Live Stream
+        </button>
+        <button class="btn" onclick="fetchLogs(true)">
+          <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i> Sync Logs
+        </button>
+        <button class="btn btn-success" onclick="exportCSV()">
+          <i class="fa-solid fa-file-csv"></i> Export CSV
+        </button>
+        <button class="btn" onclick="logout()" title="Logout from panel">
+          <i class="fa-solid fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- DEMO FALLBACK SECURITY ALERT -->
+    <div id="demoSecurityAlert" class="alert alert-warning" style="display: none;">
+      <i class="fa-solid fa-shield-cat"></i>
+      <div>
+        <div class="alert-title">Security Alert: Default Credentials Active!</div>
+        You are currently using the default fallback password (<code>admin</code>). Please secure your dashboard by creating an environment variable named <code>ADMIN_PASSWORD</code> in your <strong>Vercel Project Settings > Environment Variables</strong>.
+      </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="card stat-card">
+        <div class="stat-icon blue">
+          <i class="fa-solid fa-server"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-title">Stored Database Logs</div>
+          <div class="stat-value" id="statTotalLogs">0</div>
+        </div>
+      </div>
+      
+      <div class="card stat-card">
+        <div class="stat-icon cyan">
+          <i class="fa-solid fa-earth-americas"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-title">Active Geocountries</div>
+          <div class="stat-value" id="statCountries">0</div>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon amber">
+          <i class="fa-solid fa-fire"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-title">Game Event Hooks</div>
+          <div class="stat-value" id="statEvents">0</div>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon green">
+          <i class="fa-solid fa-user-clock"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-title">Last Activity</div>
+          <div class="stat-value" id="statLastActivity" style="font-size: 1.15rem; font-family: var(--font-outfit); font-weight: 600;">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS PANEL -->
+    <div class="charts-grid">
+      <div class="card chart-card">
+        <h3><i class="fa-solid fa-globe text-cyan"></i> Visitor Geolocation (Top Countries)</h3>
+        <div class="chart-container">
+          <canvas id="countryChart"></canvas>
+        </div>
+      </div>
+      
+      <div class="card chart-card">
+        <h3><i class="fa-solid fa-bolt text-indigo"></i> Game Event Frequency</h3>
+        <div class="chart-container">
+          <canvas id="eventChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN LOGS SEARCH & LIST PANEL -->
+    <div class="card logs-panel">
+      <div class="panel-header">
+        <div class="panel-title">Master Log Feed</div>
+        <div class="text-secondary" style="font-size: 0.85rem;" id="logsCountLabel">
+          Showing 0 matching logs
+        </div>
+      </div>
+
+      <!-- Filters Row -->
+      <div class="filters-wrapper">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="logSearchInput" class="search-input" placeholder="Fuzzy search logs by City, Country, Event, Region, or User Agent..." oninput="filterAndRenderLogs()">
+        </div>
+        
+        <select id="logTypeFilter" class="filter-select" onchange="filterAndRenderLogs()">
+          <option value="all">All Log Types</option>
+          <option value="locate">🌍 Visitors (Locate)</option>
+          <option value="track">🎮 Events (Track)</option>
+        </select>
+        
+        <select id="countryFilter" class="filter-select" onchange="filterAndRenderLogs()">
+          <option value="all">All Countries</option>
+        </select>
+      </div>
+
+      <!-- Log Loading State -->
+      <div id="logsLoader" class="loader-wrapper">
+        <div class="loader"></div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Fetching logs from KV database...</p>
+      </div>
+
+      <!-- Logs Empty State -->
+      <div id="logsEmptyState" class="empty-state" style="display: none;">
+        <i class="fa-solid fa-database"></i>
+        <h3>No Logs Found</h3>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">There are no database entries that match your search filters.</p>
+      </div>
+
+      <!-- Logs Table -->
+      <div id="logsTableContainer" class="logs-table-container" style="display: none;">
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th width="40"></th>
+              <th width="120">Timestamp</th>
+              <th width="100">Log Type</th>
+              <th width="160">Identifier / Event</th>
+              <th>Location Metadata</th>
+              <th width="140" class="text-right">Region</th>
+            </tr>
+          </thead>
+          <tbody id="logsTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // Global State variables
+    let rawLogsList = [];
+    let activeRefreshInterval = null;
+    let countryChartInstance = null;
+    let eventChartInstance = null;
+
+    // Check if credentials exist in localStorage
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedPass = localStorage.getItem('omnilogs_password');
+      const savedBase = localStorage.getItem('omnilogs_api_base');
+      
+      if (savedBase) {
+        document.getElementById('apiBaseUrl').value = savedBase;
+      }
+      
+      if (savedPass) {
+        document.getElementById('adminPassword').value = savedPass;
+        attemptAutoAuthorize(savedPass, savedBase || '');
+      }
+    });
+
+    // Handle credentials submission
+    document.getElementById('gateForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const password = document.getElementById('adminPassword').value;
+      const apiBase = document.getElementById('apiBaseUrl').value.trim();
+      
+      attemptAuthorize(password, apiBase);
+    });
+
+    function getApiUrl(endpoint, customBase = '') {
+      let base = customBase || window.location.origin;
+      // Remove trailing slash if exists
+      if (base.endsWith('/')) {
+        base = base.slice(0, -1);
+      }
+      return `${base}/api/${endpoint}`;
+    }
+
+    async function attemptAutoAuthorize(password, apiBase) {
+      try {
+        const response = await fetch(`${getApiUrl('logs', apiBase)}?secret=${encodeURIComponent(password)}`);
+        const data = await response.json();
+        
+        if (data.success || data.setupRequired) {
+          handleSuccessAuthentication(data, password, apiBase);
+        } else {
+          // Stale credentials saved in localStorage, open modal
+          localStorage.removeItem('omnilogs_password');
+        }
+      } catch (err) {
+        console.error("Auto auth failed:", err);
+      }
+    }
+
+    async function attemptAuthorize(password, apiBase) {
+      const errorDiv = document.getElementById('gateError');
+      errorDiv.style.display = 'none';
+      
+      try {
+        const response = await fetch(`${getApiUrl('logs', apiBase)}?secret=${encodeURIComponent(password)}`);
+        if (!response.ok && response.status !== 401) {
+          // Maybe network issue or 500 error containing setup required
+          const data = await response.json().catch(() => ({}));
+          if (data.setupRequired) {
+            handleSuccessAuthentication(data, password, apiBase);
+            return;
+          }
+        }
+        
+        const data = await response.json();
+        
+        if (data.success || data.setupRequired) {
+          localStorage.setItem('omnilogs_password', password);
+          localStorage.setItem('omnilogs_api_base', apiBase);
+          handleSuccessAuthentication(data, password, apiBase);
+        } else {
+          errorDiv.style.display = 'block';
+          errorDiv.textContent = data.error || 'Connection rejected. Please check your credentials.';
+        }
+      } catch (err) {
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = `Server Connection Failed. Make sure you entered a valid API base server (e.g., your Vercel deployment URL) or verify the API is online.`;
+        console.error(err);
+      }
+    }
+
+    function handleSuccessAuthentication(data, password, apiBase) {
+      document.getElementById('gateOverlay').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('gateOverlay').style.display = 'none';
+      }, 500);
+
+      if (data.setupRequired) {
+        document.getElementById('setupContainer').style.display = 'block';
+      } else {
+        document.getElementById('dashboardApp').style.display = 'block';
+        rawLogsList = data.logs || [];
+        
+        // Show demo security alert if default credentials
+        if (data.isDemo) {
+          document.getElementById('demoSecurityAlert').style.display = 'flex';
+        }
+        
+        // Fill data
+        renderDashboard(rawLogsList);
+        
+        // Start auto refresh
+        startAutoRefresh();
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('omnilogs_password');
+      window.location.reload();
+    }
+
+    // Refresh function
+    async function fetchLogs(isManual = false) {
+      const password = localStorage.getItem('omnilogs_password');
+      const apiBase = localStorage.getItem('omnilogs_api_base') || '';
+      
+      const refreshIcon = document.getElementById('refreshIcon');
+      if (refreshIcon && isManual) {
+        refreshIcon.style.animation = 'spin 1s linear infinite';
+      }
+
+      try {
+        const response = await fetch(`${getApiUrl('logs', apiBase)}?secret=${encodeURIComponent(password)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          rawLogsList = data.logs || [];
+          renderDashboard(rawLogsList);
+        }
+      } catch (err) {
+        console.error("Failed to sync fresh logs:", err);
+      } finally {
+        if (refreshIcon && isManual) {
+          refreshIcon.style.animation = 'none';
+        }
+      }
+    }
+
+    // Auto-refresh control
+    function startAutoRefresh() {
+      if (activeRefreshInterval) clearInterval(activeRefreshInterval);
+      
+      activeRefreshInterval = setInterval(() => {
+        fetchLogs(false);
+      }, 12000); // Sync every 12 seconds
+      
+      document.getElementById('liveToggle').classList.add('active');
+    }
+
+    function toggleAutoRefresh() {
+      const liveBtn = document.getElementById('liveToggle');
+      if (liveBtn.classList.contains('active')) {
+        clearInterval(activeRefreshInterval);
+        activeRefreshInterval = null;
+        liveBtn.classList.remove('active');
+        liveBtn.textContent = 'Stream Paused';
+      } else {
+        liveBtn.classList.add('active');
+        liveBtn.textContent = 'Live Stream';
+        fetchLogs(true);
+        startAutoRefresh();
+      }
+    }
+
+    // Render Stats, Charts, and Logs
+    function renderDashboard(logs) {
+      // Calculate Stats
+      document.getElementById('statTotalLogs').textContent = logs.length;
+      
+      const countries = new Set();
+      const events = new Set();
+      let lastActivityTime = '-';
+
+      logs.forEach(log => {
+        if (log.country && log.country !== 'Unknown') countries.add(log.country);
+        if (log.type === 'track' && log.event) events.add(log.event);
+      });
+
+      document.getElementById('statCountries').textContent = countries.size;
+      document.getElementById('statEvents').textContent = events.size;
+
+      if (logs.length > 0 && logs[0].timestamp) {
+        lastActivityTime = formatTimeAgo(new Date(logs[0].timestamp));
+      }
+      document.getElementById('statLastActivity').textContent = lastActivityTime;
+
+      // Populate Country filter select options
+      populateCountryFilter(countries);
+
+      // Render charts
+      renderCharts(logs);
+
+      // Render logs table
+      filterAndRenderLogs();
+    }
+
+    function populateCountryFilter(countries) {
+      const select = document.getElementById('countryFilter');
+      const currentValue = select.value;
+      
+      // Clear all dynamic options (keep the first 'All Countries' option)
+      select.innerHTML = '<option value="all">All Countries</option>';
+      
+      // Sort countries alphabetically
+      Array.from(countries).sort().forEach(country => {
+        const option = document.createElement('option');
+        option.value = country;
+        option.textContent = getCountryName(country);
+        select.appendChild(option);
+      });
+
+      // Restore selected value
+      select.value = currentValue;
+    }
+
+    // Time Ago formatter
+    function formatTimeAgo(date) {
+      const seconds = Math.floor((new Date() - date) / 1000);
+      
+      if (seconds < 5) return 'Just now';
+      if (seconds < 60) return `${seconds}s ago`;
+      
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}m ago`;
+      
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
+    }
+
+    function getCountryName(code) {
+      const codeMap = {
+        'US': 'United States',
+        'IN': 'India',
+        'CN': 'China',
+        'JP': 'Japan',
+        'GB': 'United Kingdom',
+        'DE': 'Germany',
+        'FR': 'France',
+        'CA': 'Canada',
+        'AU': 'Australia',
+        'SG': 'Singapore'
+      };
+      return codeMap[code] || code;
+    }
+
+    // Render Charts
+    function renderCharts(logs) {
+      // 1. Country distribution
+      const countryCounts = {};
+      logs.forEach(log => {
+        const c = log.country || 'Unknown';
+        countryCounts[c] = (countryCounts[c] || 0) + 1;
+      });
+
+      const countryLabels = Object.keys(countryCounts).sort((a,b) => countryCounts[b] - countryCounts[a]).slice(0, 5);
+      const countryData = countryLabels.map(lbl => countryCounts[lbl]);
+
+      if (countryChartInstance) countryChartInstance.destroy();
+      
+      const countryCtx = document.getElementById('countryChart').getContext('2d');
+      countryChartInstance = new Chart(countryCtx, {
+        type: 'bar',
+        data: {
+          labels: countryLabels.map(getCountryName),
+          datasets: [{
+            label: 'Visits',
+            data: countryData,
+            backgroundColor: [
+              'rgba(6, 182, 212, 0.65)',
+              'rgba(99, 102, 241, 0.65)',
+              'rgba(139, 92, 246, 0.65)',
+              'rgba(245, 158, 11, 0.65)',
+              'rgba(16, 185, 129, 0.65)'
+            ],
+            borderColor: [
+              '#06b6d4',
+              '#6366f1',
+              '#8b5cf6',
+              '#f59e0b',
+              '#10b981'
+            ],
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255,255,255,0.03)' },
+              ticks: { color: '#9ca3af', font: { family: 'Outfit' } }
+            },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.03)' },
+              ticks: { color: '#9ca3af', font: { family: 'Outfit' }, precision: 0 }
+            }
+          }
+        }
+      });
+
+      // 2. Event occurrence counts
+      const eventCounts = {};
+      logs.forEach(log => {
+        if (log.type === 'track') {
+          const ev = log.event || 'Unknown';
+          eventCounts[ev] = (eventCounts[ev] || 0) + 1;
+        } else {
+          eventCounts['VISITOR_PAGE_LOAD'] = (eventCounts['VISITOR_PAGE_LOAD'] || 0) + 1;
+        }
+      });
+
+      const eventLabels = Object.keys(eventCounts).sort((a,b) => eventCounts[b] - eventCounts[a]).slice(0, 5);
+      const eventData = eventLabels.map(lbl => eventCounts[lbl]);
+
+      if (eventChartInstance) eventChartInstance.destroy();
+      
+      const eventCtx = document.getElementById('eventChart').getContext('2d');
+      eventChartInstance = new Chart(eventCtx, {
+        type: 'doughnut',
+        data: {
+          labels: eventLabels,
+          datasets: [{
+            data: eventData,
+            backgroundColor: [
+              'rgba(99, 102, 241, 0.65)',
+              'rgba(139, 92, 246, 0.65)',
+              'rgba(6, 182, 212, 0.65)',
+              'rgba(245, 158, 11, 0.65)',
+              'rgba(16, 185, 129, 0.65)'
+            ],
+            borderColor: 'rgba(15, 18, 30, 0.9)',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                color: '#9ca3af',
+                font: { family: 'Outfit', size: 11 },
+                boxWidth: 12
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Filter, Search, and Render Logs Table
+    function filterAndRenderLogs() {
+      const searchQuery = document.getElementById('logSearchInput').value.toLowerCase().trim();
+      const typeFilter = document.getElementById('logTypeFilter').value;
+      const countryVal = document.getElementById('countryFilter').value;
+
+      document.getElementById('logsLoader').style.display = 'none';
+
+      // Apply Filters
+      const filtered = rawLogsList.filter(log => {
+        // Type filter
+        if (typeFilter !== 'all' && log.type !== typeFilter) return false;
+        
+        // Country filter
+        if (countryVal !== 'all' && log.country !== countryVal) return false;
+
+        // Search Query
+        if (searchQuery) {
+          const matchString = `
+            ${log.type || ''} 
+            ${log.event || ''} 
+            ${log.country || ''} 
+            ${log.region || ''} 
+            ${log.city || ''} 
+            ${log.userAgent || ''} 
+            ${JSON.stringify(log.data || {})}
+          `.toLowerCase();
+          
+          if (!matchString.includes(searchQuery)) return false;
+        }
+
+        return true;
+      });
+
+      // Update count label
+      document.getElementById('logsCountLabel').textContent = `Showing ${filtered.length} of ${rawLogsList.length} total entries`;
+
+      const tbody = document.getElementById('logsTableBody');
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        document.getElementById('logsTableContainer').style.display = 'none';
+        document.getElementById('logsEmptyState').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('logsEmptyState').style.display = 'none';
+      document.getElementById('logsTableContainer').style.display = 'block';
+
+      filtered.forEach((log, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'clickable';
+        tr.onclick = () => toggleLogDetails(index);
+        
+        const timestamp = new Date(log.timestamp);
+        const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dateStr = timestamp.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+        const typeBadge = log.type === 'locate' 
+          ? '<span class="badge badge-locate"><i class="fa-solid fa-user-check"></i> locate</span>'
+          : log.type === 'track'
+            ? '<span class="badge badge-track"><i class="fa-solid fa-circle-play"></i> track</span>'
+            : '<span class="badge badge-error">error</span>';
+
+        const identifier = log.type === 'locate'
+          ? `<span class="text-cyan"><i class="fa-solid fa-network-wired"></i> Page Visit</span>`
+          : `<span class="text-indigo" style="font-weight:600;"><i class="fa-solid fa-gamepad"></i> ${log.event.toUpperCase()}</span>`;
+
+        const location = log.country && log.country !== 'Unknown'
+          ? `🌍 <strong>${log.city || 'Unknown'}</strong>, ${log.country}`
+          : '⚠️ Geolocation Headers Blocked';
+
+        const region = log.region && log.region !== 'Unknown' ? log.region : '-';
+
+        tr.innerHTML = `
+          <td><i class="fa-solid fa-chevron-right text-muted" id="chevron-${index}"></i></td>
+          <td>
+            <div style="font-weight: 500; color: white;">${timeStr}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${dateStr}</div>
+          </td>
+          <td>${typeBadge}</td>
+          <td>${identifier}</td>
+          <td>${location}</td>
+          <td class="text-right text-secondary">${region}</td>
+        `;
+
+        tbody.appendChild(tr);
+
+        // Add the collapsible details row
+        const detailTr = document.createElement('tr');
+        detailTr.id = `details-${index}`;
+        detailTr.className = 'detail-row';
+        detailTr.style.display = 'none';
+        
+        const colspan = 6;
+        
+        let detailsHtml = `
+          <div class="detail-container">
+            <div class="detail-grid">
+              <div>
+                <div class="detail-item-title">System Specifications</div>
+                <div class="detail-item-value">${log.userAgent || 'Unknown User Agent'}</div>
+              </div>
+              <div>
+                <div class="detail-item-title">Detailed Geolocation</div>
+                <div class="detail-item-value">
+                  Country Code: ${log.country || 'Unknown'}<br>
+                  Region/State: ${log.region || 'Unknown'}<br>
+                  City/District: ${log.city || 'Unknown'}
+                </div>
+              </div>
+        `;
+
+        if (log.type === 'track') {
+          detailsHtml += `
+              <div>
+                <div class="detail-item-title">Event Trigger Parameters</div>
+                <div class="detail-item-value">
+                  Event Action: <strong class="text-indigo">${log.event}</strong>
+                </div>
+              </div>
+            </div>
+            <div class="detail-item-title" style="margin-bottom: 0.5rem;">Event Payload (JSON Object)</div>
+            <pre class="json-pre">${JSON.stringify(log.data || {}, null, 2)}</pre>
+          </div>
+          `;
+        } else {
+          detailsHtml += `
+              <div>
+                <div class="detail-item-title">Request Attributes</div>
+                <div class="detail-item-value">
+                  HTTP Method: <strong class="text-cyan">${log.method || 'GET'}</strong><br>
+                  Requested Path: <code>/api/locate</code>
+                </div>
+              </div>
+            </div>
+          </div>
+          `;
+        }
+
+        detailTr.innerHTML = `<td colspan="${colspan}">${detailsHtml}</td>`;
+        tbody.appendChild(detailTr);
+      });
+    }
+
+    // Toggle collapse details row
+    function toggleLogDetails(index) {
+      const detailsRow = document.getElementById(`details-${index}`);
+      const chevron = document.getElementById(`chevron-${index}`);
+      
+      if (detailsRow.style.display === 'none') {
+        detailsRow.style.display = 'table-row';
+        chevron.className = 'fa-solid fa-chevron-down text-indigo';
+      } else {
+        detailsRow.style.display = 'none';
+        chevron.className = 'fa-solid fa-chevron-right text-muted';
+      }
+    }
+
+    // Export Logs as CSV
+    function exportCSV() {
+      if (rawLogsList.length === 0) {
+        alert("There are no logs in the database to export.");
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,";
+      // Headers
+      csvContent += "Timestamp,Log Type,Event/Identifier,Country,Region,City,User Agent,Event Payload\r\n";
+
+      rawLogsList.forEach(log => {
+        const row = [
+          log.timestamp || '',
+          log.type || '',
+          log.type === 'track' ? log.event : 'Page Load',
+          log.country || '',
+          log.region || '',
+          log.city || '',
+          `"${(log.userAgent || '').replace(/"/g, '""')}"`,
+          `"${JSON.stringify(log.data || {}).replace(/"/g, '""')}"`
+        ];
+        csvContent += row.join(",") + "\r\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `fracture_game_logs_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
