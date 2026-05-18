@@ -17,7 +17,28 @@
                 status.innerText = 'ERROR: ' + msg + ' (Line: ' + lineNo + ')';
             }
             console.error('GLOBAL ERROR:', msg, url, lineNo, error);
+
+            // Send crash telemetry to our custom logging serverless bypass
+            const crashData = {
+                message: msg,
+                source: url,
+                lineno: lineNo,
+                colno: columnNo,
+                stack: error ? error.stack : null
+            };
+            fetch(`/api/track?event=client_crash&data=${encodeURIComponent(JSON.stringify(crashData))}`).catch(() => {});
+
             return false;
+        };
+
+        window.onunhandledrejection = function(event) {
+            console.error('UNHANDLED REJECTION:', event.reason);
+            const crashData = {
+                message: event.reason ? (event.reason.message || String(event.reason)) : 'Unhandled Promise Rejection',
+                source: 'PromiseRejection',
+                stack: event.reason ? event.reason.stack : null
+            };
+            fetch(`/api/track?event=client_crash&data=${encodeURIComponent(JSON.stringify(crashData))}`).catch(() => {});
         };
 
         // Debug click tracker

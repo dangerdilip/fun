@@ -49,7 +49,12 @@ This plan outlines the next phase of production tracking for *Fracture*. Leverag
 
 ---
 
-## 4. Next Implementation Steps
-1. **Performance Loop:** Implement a frame counter using `requestAnimationFrame` inside the game loop to track elapsed times and compute FPS.
-2. **Global Error Listener:** Add the `window.addEventListener('error')` hook in `index.html` to direct uncaught crashes to `/api/track?event=client_crash`.
-3. **Skill Event Hooks:** Integrate the track pings inside `src/heroes/` classes under their respective attack trigger methods.
+## 📋 4. Telemetry Implementation Status (Completed & Fully Integrated)
+
+We have successfully implemented and verified all advanced client performance, error tracking, and analytics hooks:
+
+*   **📊 FPS & Performance Loop:** Integrated frame-timing metrics directly in the core rendering loop (`src/Game.js`). Samples combat frame rates during matches, computes average & minimum FPS (excluding startup spikes), and bundles them with real-world WebGL GPU names and screen configurations, pinging `/api/track?event=game_performance` on match end.
+*   **🚨 Global Crash & Promise Boundary:** Expanded JavaScript error interceptors inside the entry point (`index.html`) using robust `window.onerror` and `window.onunhandledrejection` boundaries to seamlessly track uncaught exceptions and rejected promises.
+*   **🔌 Active Asset-Fetch Guard:** Wrapped loading steps and model caches (gltf loaders and parallel blob preloaders) inside `src/Game.js` and `src/Character.js` with comprehensive try/catch tracking handlers, logging preloader fetches and parsing failures immediately.
+*   **🎮 Combat Move & Skill Balancing:** Added per-match debounced skill tracking inside the attack engine `src/Character.js` when special, magic, and combo moves are triggered, keeping telemetry lightweight and capped at a maximum of 3 events per skill per match.
+*   **🎨 High-Fidelity Omnilogs Integration:** Upgraded the administrative dashboard `logs.html` with bespoke CSS class styles, custom icons, and visual color highlights for performance and crash telemetry, allowing simple filtering and administrative reviews.

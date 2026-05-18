@@ -194,6 +194,7 @@ export class Game {
         this.clock          = new THREE.Clock();
         this.victoryTriggered = false;
         this._matchTimer = 90;
+        this._fpsSamples = [];
 
         this._loop();
     }
@@ -244,9 +245,16 @@ export class Game {
                 if (res.ok) {
                     const blob = await res.blob();
                     this._preloadedBlobURLs[filename] = URL.createObjectURL(blob);
+                } else {
+                    throw new Error(`HTTP status ${res.status}`);
                 }
             } catch (e) {
                 console.warn(`[Game] Fetch failed: ${url}`);
+                const errData = {
+                    file: url,
+                    error: e.message || String(e)
+                };
+                fetch(`/api/track?event=preloader_error&data=${encodeURIComponent(JSON.stringify(errData))}`).catch(() => {});
             } finally {
                 loadedCount++;
                 const p = Math.floor((loadedCount / totalCount) * 100);
@@ -293,11 +301,25 @@ export class Game {
                 gltfLoader.load(blobUrl, (gltf) => {
                     this._preloadedHeroModels[key] = gltf;
                     console.log(`[Game] Cached high-quality preview for: ${key}`);
+                }, undefined, (err) => {
+                    console.warn(`[Game] GLB parse failed for preloaded blob: ${filename}`);
+                    const errData = {
+                        file: filename,
+                        error: err.message || String(err)
+                    };
+                    fetch(`/api/track?event=gltf_parse_error&data=${encodeURIComponent(JSON.stringify(errData))}`).catch(() => {});
                 });
             } else {
                 // Fallback
                 gltfLoader.load(`hero_card/${filename}`, (gltf) => {
                     this._preloadedHeroModels[key] = gltf;
+                }, undefined, (err) => {
+                    console.warn(`[Game] GLB fetch/parse failed for fallback: hero_card/${filename}`);
+                    const errData = {
+                        file: `hero_card/${filename}`,
+                        error: err.message || String(err)
+                    };
+                    fetch(`/api/track?event=gltf_fetch_error&data=${encodeURIComponent(JSON.stringify(errData))}`).catch(() => {});
                 });
             }
         });
@@ -1045,6 +1067,7 @@ export class Game {
         this.currentPhase = 5;
         this.aiDifficulty = difficulty;
         this._matchTimer = 90; // Reset timer for the match
+        this._fpsSamples = [];
 
         fetch(`/api/track?event=match_start&data=${encodeURIComponent(JSON.stringify({ player_character: this.selectedP1Key || 'unknown', difficulty: difficulty }))}`).catch(() => {});
 
@@ -1150,6 +1173,34 @@ export class Game {
         
         fetch(`/api/track?event=match_result&data=${encodeURIComponent(JSON.stringify({ winner: winnerName.includes('YOU') ? 'Player' : 'AI', winner_name: winnerName, difficulty: this.aiDifficulty || 'unknown', player_character: this.selectedP1Key || 'unknown' }))}`).catch(() => {});
 
+        // FPS / Performance Telemetry
+        if (this._fpsSamples && this._fpsSamples.length > 0) {
+            const sum = this._fpsSamples.reduce((a, b) => a + b, 0);
+            const avgFps = Math.round(sum / this._fpsSamples.length);
+            const sortedSamples = [...this._fpsSamples].sort((a, b) => a - b);
+            const minFps = Math.round(sortedSamples[Math.floor(sortedSamples.length * 0.05)] || sortedSamples[0]);
+            
+            let gpu = 'Unknown GPU';
+            try {
+                const gl = this.renderer.getContext();
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                    gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                }
+            } catch(e) {}
+
+            const performanceData = {
+                avg_fps: avgFps,
+                min_fps: minFps,
+                gpu: gpu,
+                screen_width: window.innerWidth,
+                screen_height: window.innerHeight,
+                user_agent: navigator.userAgent
+            };
+
+            fetch(`/api/track?event=game_performance&data=${encodeURIComponent(JSON.stringify(performanceData))}`).catch(() => {});
+        }
+
         setTimeout(() => {
             const ui = document.getElementById('victory-ui');
             const title = document.getElementById('victory-title');
@@ -1216,6 +1267,14 @@ export class Game {
         if (this.gameLoaded) {
             // Only update players/AI if fight has actually started
             if (this.fightStarted) {
+                // FPS Tracking during active combat
+                if (dt > 0 && !this.victoryTriggered) {
+                    const currentFps = 1 / dt;
+                    if (this._fpsSamples && this._fpsSamples.length < 5000) {
+                        this._fpsSamples.push(currentFps);
+                    }
+                }
+
                 this.player1.update(dt);
                 if (this.aiController) this.aiController.update(dt);
                 this.player2.update(dt);

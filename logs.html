@@ -522,6 +522,12 @@
       border: 1px solid rgba(239, 68, 68, 0.2);
     }
 
+    .badge-performance {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
     /* Details Panel */
     .detail-row {
       background: rgba(0, 0, 0, 0.35);
@@ -1403,15 +1409,29 @@
         const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const dateStr = timestamp.toLocaleDateString([], { month: 'short', day: 'numeric' });
 
-        const typeBadge = log.type === 'locate' 
-          ? '<span class="badge badge-locate"><i class="fa-solid fa-user-check"></i> locate</span>'
-          : log.type === 'track'
-            ? '<span class="badge badge-track"><i class="fa-solid fa-circle-play"></i> track</span>'
-            : '<span class="badge badge-error">error</span>';
+        let typeBadge = '';
+        if (log.type === 'locate') {
+          typeBadge = '<span class="badge badge-locate"><i class="fa-solid fa-user-check"></i> locate</span>';
+        } else if (log.type === 'track') {
+          const ev = (log.event || '').toLowerCase();
+          if (ev.includes('error') || ev.includes('crash')) {
+            typeBadge = `<span class="badge badge-error"><i class="fa-solid fa-circle-exclamation"></i> ${log.event.replace(/_/g, ' ')}</span>`;
+          } else if (ev.includes('performance') || ev.includes('fps')) {
+            typeBadge = `<span class="badge badge-performance"><i class="fa-solid fa-gauge-high"></i> ${log.event.replace(/_/g, ' ')}</span>`;
+          } else {
+            typeBadge = `<span class="badge badge-track"><i class="fa-solid fa-circle-play"></i> ${log.event.replace(/_/g, ' ')}</span>`;
+          }
+        } else {
+          typeBadge = '<span class="badge badge-error">error</span>';
+        }
 
         const identifier = log.type === 'locate'
           ? `<span class="text-cyan"><i class="fa-solid fa-network-wired"></i> Page Visit</span>`
-          : `<span class="text-indigo" style="font-weight:600;"><i class="fa-solid fa-gamepad"></i> ${log.event.toUpperCase()}</span>`;
+          : (log.event.toLowerCase().includes('error') || log.event.toLowerCase().includes('crash'))
+            ? `<span style="font-weight:600; color: var(--accent-red);"><i class="fa-solid fa-triangle-exclamation"></i> ${log.event.toUpperCase()}</span>`
+            : log.event.toLowerCase().includes('performance')
+              ? `<span style="font-weight:600; color: var(--accent-amber);"><i class="fa-solid fa-gauge-high"></i> ${log.event.toUpperCase()}</span>`
+              : `<span class="text-indigo" style="font-weight:600;"><i class="fa-solid fa-gamepad"></i> ${log.event.toUpperCase()}</span>`;
 
         const location = log.country && log.country !== 'Unknown'
           ? `🌍 <strong>${log.city || 'Unknown'}</strong>, ${log.country}`

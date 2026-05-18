@@ -40,6 +40,7 @@ export class Character {
         this.attackTimer = 0;
         this.hitCooldown = 0;
         this.attackDirection = 0;
+        this._skillTrackerUsage = {};
 
         // Active Projectiles
         this.projectiles = [];
@@ -242,6 +243,11 @@ export class Character {
 
         } catch (err) {
             console.error('[Character] LOAD ERROR:', err);
+            const errData = {
+                character: this.config.name,
+                error: err.message || String(err)
+            };
+            fetch(`/api/track?event=character_load_error&data=${encodeURIComponent(JSON.stringify(errData))}`).catch(() => {});
         }
     }
 
@@ -352,6 +358,12 @@ export class Character {
                 this.actions[key] = action;
             }).catch(e => {
                 console.warn(`[Character] Could not load animation "${key}":`, e.message);
+                const errData = {
+                    character: this.config.name,
+                    animation: key,
+                    error: e.message || String(e)
+                };
+                fetch(`/api/track?event=animation_load_error&data=${encodeURIComponent(JSON.stringify(errData))}`).catch(() => {});
             });
 
             loadPromises.push(loadPromise);
@@ -719,6 +731,24 @@ export class Character {
         if (animKey === 'magic' || animKey === 'special') {
             const soundKey = this.config.sounds[animKey];
             if (soundKey) this.playSound(animKey, 2.0);
+        }
+
+        // ── Skill Balancing Analytics ──
+        // We log special, magic, combo1, combo2, punch, and kick.
+        // Let's keep a hard max of 3 logs per skill per player per match to respect traffic limits.
+        if (['special', 'magic', 'combo1', 'combo2'].includes(animKey)) {
+            if (!this._skillTrackerUsage) this._skillTrackerUsage = {};
+            if (!this._skillTrackerUsage[animKey]) this._skillTrackerUsage[animKey] = 0;
+            
+            if (this._skillTrackerUsage[animKey] < 3) {
+                this._skillTrackerUsage[animKey]++;
+                const skillData = {
+                    character: this.config.name,
+                    is_player: this.isPlayerOne,
+                    skill: animKey
+                };
+                fetch(`/api/track?event=skill_used&data=${encodeURIComponent(JSON.stringify(skillData))}`).catch(() => {});
+            }
         }
 
         this.fadeTo(animKey);
