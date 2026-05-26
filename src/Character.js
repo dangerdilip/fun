@@ -12,6 +12,13 @@ function getAudioCtx() {
     return _audioCtx;
 }
 
+export function unlockAudioContext() {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') {
+        ctx.resume();
+    }
+}
+
 export class Character {
     constructor(scene, inputManager, config, isPlayerOne = true, loadingManager = null) {
         this.scene       = scene;
@@ -40,6 +47,7 @@ export class Character {
         this.attackTimer = 0;
         this.hitCooldown = 0;
         this.attackDirection = 0;
+        this.grabActive  = false;
         this._skillTrackerUsage = {};
 
         // Active Projectiles
@@ -375,17 +383,33 @@ export class Character {
         this.onAnimationsLoaded(); // Hook for subclasses
 
         // Wire up the animation-finished handler only once all actions exist
-        this.mixer.addEventListener('finished', (e) => {
+        this.setupMixerFinishedListener(this.mixer);
+    }
+
+    setupMixerFinishedListener(mixer) {
+        if (!mixer) return;
+        
+        // Remove existing listener if any to avoid duplication
+        if (mixer._finishedHandler) {
+            mixer.removeEventListener('finished', mixer._finishedHandler);
+        }
+        
+        mixer._finishedHandler = (e) => {
             if (this.isDead || this.isVictory) return;
+            const isGrappled = this.opponent && this.opponent.grabActive;
+            if (isGrappled) return;
+
             const act = e.action;
-            const resetKeys = ['punch','kick','special','magic','combo1','combo2','hit_light','hit_medium','get_up'];
+            const resetKeys = ['punch','kick','special','magic','combo1','combo2','hit_light','hit_medium','get_up','secret_art'];
             for (const k of resetKeys) {
-                if (this.actions[k] === act && act === this.currentAction) {
+                if ((this.actions[k] === act || (this.domainActions && this.domainActions[k] === act)) && act === this.currentAction) {
                     this._resetState();
                     return;
                 }
             }
-        });
+        };
+        
+        mixer.addEventListener('finished', mixer._finishedHandler);
     }
 
     // ─── State helpers ────────────────────────────────────────────────────────
@@ -486,8 +510,12 @@ export class Character {
         // Dynamic threshold: kick/special needs a bit more reach than jab
         const hitThreshold = isKick ? 2.0 : 1.7;
         const dist = attackPos.distanceTo(targetPos);
+        
+        const dx = Math.abs(this.opponent.pos.x - this.pos.x);
+        const dy = Math.abs(this.opponent.pos.y - this.pos.y);
+        const isProximityHit = (dx < 1.4 && dy < 2.0);
 
-        if (dist < hitThreshold) {
+        if (dist < hitThreshold || isProximityHit) {
             this.opponent.takeDamage(damage, false);
             this.mana = Math.min(100, this.mana + (isMultiHit ? 2 : 12));
             this._updateUI();
@@ -500,8 +528,8 @@ export class Character {
                 this.playSound('combo', 1.0);
             }
 
-            // ── Knockback impulse on special/kick hits to prevent pass-through ──
-            if (activeAction === this.actions['special'] || activeAction === this.actions['kick']) {
+            // ── Knockback impulse on kick hits to prevent pass-through ──
+            if (activeAction === this.actions['kick']) {
                 // Push opponent away from attacker so they can't occupy the same space
                 this.opponent.vel.x = dir * this.MOVE_SPEED * 1.8;
             }
@@ -511,6 +539,12 @@ export class Character {
     // ─── Per-frame update ─────────────────────────────────────────────────────
     update(dt) {
         if (!this._ready) return;
+        
+        // Capture side before updates
+        if (this.opponent) {
+            const dx = this.opponent.pos.x - this.pos.x;
+            this.sideBefore = Math.sign(dx) || (this.isPlayerOne ? 1 : -1);
+        }
 
         // Projectiles
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
@@ -539,22 +573,36 @@ export class Character {
         // Cooldowns & timers
         if (this.hitCooldown > 0) this.hitCooldown -= dt;
         if (this.isAttacking || this.isHit) {
-            this.attackTimer += dt;
+            const isGrappled = this.opponent && this.opponent.grabActive;
+            if (isGrappled || this.isParalyzed) {
+                this.attackTimer = 0; // Freeze attack timer during grapple or paralysis to prevent early reset
+            } else {
+                this.attackTimer += dt;
+            }
             
             // Dynamically determine safety threshold from active action duration (adds 0.2s grace buffer)
             const act = this.currentAction;
             const clipDur = (act && act.getClip()) ? act.getClip().duration : 2.0;
             const threshold = Math.max(3.0, clipDur + 0.2); // minimum 3.0s backup safety
             
-            if (this.attackTimer > threshold) this._resetState();
+            if (this.attackTimer > threshold && !isGrappled && !this.isParalyzed) {
+                this._resetState();
+            }
             this._checkCombat();
         }
 
+        const isGrappled = this.opponent && this.opponent.grabActive;
+
         // ── Input & Physics ───────────────────────────────────────────────────
-        if (!this.grounded) {
-            this.vel.y += this.GRAVITY * dt;
+        if (isGrappled) {
+            this.vel.x = 0;
+            this.vel.y = 0;
         } else {
-            this.jumpsLeft = this.MAX_JUMPS;
+            if (!this.grounded) {
+                this.vel.y += this.GRAVITY * dt;
+            } else {
+                this.jumpsLeft = this.MAX_JUMPS;
+            }
         }
 
         let desiredVelX = 0;
@@ -611,7 +659,11 @@ export class Character {
             const lerpFactor = 1 - Math.exp(-this.ACCEL * safeDt);
             this.vel.x += (desiredVelX - this.vel.x) * lerpFactor;
         } else if (this.isAttacking && activeAction === this.actions['special']) {
-            this.vel.x = this.attackDirection * this.MOVE_SPEED * 1.15;
+            if (this.grabActive) {
+                this.vel.x = 0; // Stop forward movement once grab connects
+            } else {
+                this.vel.x = this.attackDirection * this.MOVE_SPEED * 1.15;
+            }
         } else if (this.isAttacking && activeAction === this.actions['combo1']) {
             const burst = Math.max(0, 1.2 - this.attackTimer * 3.0);
             this.vel.x  = this.attackDirection * this.MOVE_SPEED * burst;
@@ -625,19 +677,21 @@ export class Character {
             if (Math.abs(this.vel.x) < 0.1) this.vel.x = 0;
         }
 
-        this.pos.x += this.vel.x * safeDt;
-        this.pos.y += this.vel.y * safeDt;
+        if (!isGrappled) {
+            this.pos.x += this.vel.x * safeDt;
+            this.pos.y += this.vel.y * safeDt;
 
-        // Ground clamp
-        if (this.pos.y <= GROUND_Y) {
-            this.pos.y = GROUND_Y;
-            this.vel.y = 0;
-            this.grounded = true;
+            // Ground clamp
+            if (this.pos.y <= GROUND_Y) {
+                this.pos.y = GROUND_Y;
+                this.vel.y = 0;
+                this.grounded = true;
+            }
+
+            // Arena walls
+            if (this.pos.x < -ARENA_WALL) { this.pos.x = -ARENA_WALL; this.vel.x = 0; }
+            if (this.pos.x >  ARENA_WALL) { this.pos.x =  ARENA_WALL; this.vel.x = 0; }
         }
-
-        // Arena walls
-        if (this.pos.x < -ARENA_WALL) { this.pos.x = -ARENA_WALL; this.vel.x = 0; }
-        if (this.pos.x >  ARENA_WALL) { this.pos.x =  ARENA_WALL; this.vel.x = 0; }
 
         // ── Facing & movement animations (only when opponent ref exists) ──────
         if (this.opponent) {
@@ -649,17 +703,25 @@ export class Character {
             // ── Physical blocker & Pushing Resolver ──
             // Prevent pass-through during all active gameplay states while enforcing kinetic pushing.
             const MIN_SEP = this.MIN_DIST;
-            const overlap = MIN_SEP - absDx;
+            let overlap = MIN_SEP - absDx;
+            
+            // Check if they crossed sides compared to the start of the frame
+            if (this.sideBefore && Math.sign(dx) !== this.sideBefore) {
+                overlap = MIN_SEP + absDx;
+            }
+            
             const isGrappled = this.grabActive || (this.opponent && this.opponent.grabActive);
 
-            if (overlap > 0 && vertDist < 2.2 && !isGrappled) {
-                let pushDir = dirToOpp;
-                if (pushDir === 0) pushDir = this.attackDirection || (this.isPlayerOne ? 1 : -1);
+            // Identify which character is actively lunging to determine kinetic priority
+            const lungingKeys = ['special', 'combo1', 'combo2'];
+            const isThisLunging = this.isAttacking && lungingKeys.some(k => this.currentAction && this.currentAction === this.actions[k]);
+            const isOppLunging = this.opponent.isAttacking && this.opponent.actions && lungingKeys.some(k => this.opponent.currentAction && this.opponent.currentAction === this.opponent.actions[k]);
 
-                // Identify which character is actively lunging to determine kinetic priority
-                const lungingActions = new Set([this.actions['special'], this.actions['combo1'], this.actions['combo2']]);
-                const isThisLunging = this.isAttacking && lungingActions.has(this.currentAction);
-                const isOppLunging = this.opponent.isAttacking && this.opponent.actions && Array.from(lungingActions).some(k => this.opponent.actions[k] === this.opponent.currentAction);
+            // Enforce hard collision boundary if lunging to guarantee push/drag effect, otherwise use 2.2m height threshold
+            const heightCheck = (isThisLunging || isOppLunging) ? true : (vertDist < 2.2);
+
+            if (overlap > 0 && heightCheck && !isGrappled) {
+                let pushDir = this.sideBefore || (this.isPlayerOne ? 1 : -1);
 
                 // ── Kinetic Split Resolver ──
                 // If one character is blocked by a wall, the other takes 100% of the displacement.
@@ -691,8 +753,11 @@ export class Character {
                 this.pos.x = Math.max(-ARENA_WALL, Math.min(ARENA_WALL, this.pos.x));
                 this.opponent.pos.x = Math.max(-ARENA_WALL, Math.min(ARENA_WALL, this.opponent.pos.x));
 
-                // Kill relative velocities driving into each other
-                if (Math.sign(this.vel.x) === pushDir) this.vel.x = 0;
+                // Kill relative velocities driving into each other, except if lunging and not blocked by wall
+                const isBlockedByWall = (oppAtWall && pushDir === Math.sign(this.vel.x)) || (atWall && pushDir === -Math.sign(this.vel.x));
+                if ((!isThisLunging || isBlockedByWall) && Math.sign(this.vel.x) === pushDir) {
+                    this.vel.x = 0;
+                }
             }
 
             // ── Face opponent: snap when far, lerp when close ────────────────
@@ -719,6 +784,10 @@ export class Character {
     }
 
     _startAttack(animKey, timerOffset = 0) {
+        if (!this.actions[animKey]) {
+            console.warn(`[Character] Cannot start attack: action "${animKey}" not loaded/defined yet.`);
+            return;
+        }
         this.isAttacking     = true;
         this.attackTimer     = timerOffset;
         this.attackDirection = this.opponent

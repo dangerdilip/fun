@@ -11,6 +11,7 @@ import { CHARACTER_CONFIGS } from './CharacterConfigs.js';
 import { AIBot }             from './AIBot.js';
 import { ArenaManager }      from './ArenaManager.js';
 import { AudioManager }      from './AudioManager.js';
+import { unlockAudioContext } from './Character.js';
 
 const HERO_CARDS_DATA = [
     {
@@ -272,6 +273,15 @@ export class Game {
             startBtn.innerText = 'ENTER ARENA';
             startBtn.onclick = () => {
                 if (initialUi) initialUi.style.display = 'none';
+                
+                try {
+                    // Unlock Character AudioContext
+                    unlockAudioContext();
+                    // Unlock HTML5 Audio (AudioManager)
+                    const dummy = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+                    dummy.play().catch(() => {});
+                } catch(e) { console.warn("Audio unlock failed", e); }
+
                 this._startCinematicPhase2();
             };
         }
