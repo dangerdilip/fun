@@ -85,7 +85,7 @@ export class Game {
         this.manager.onLoad = () => {
             console.log('[Game] All assets loaded in background!');
             this._assetsFullyLoaded = true;
-            if (this.currentPhase === 5) {
+            if (this.currentPhase === 5 && !this.gameLoaded) {
                 const finalLoadUi = document.getElementById('final-loading-ui');
                 if (finalLoadUi) {
                     finalLoadUi.style.transition = 'opacity 0.5s ease';
