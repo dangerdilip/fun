@@ -426,7 +426,15 @@ export class Character {
 
     fadeTo(name) {
         const next = this.actions[name];
-        if (!next || next === this.currentAction) return;
+        if (!next) return;
+        if (next === this.currentAction) {
+            // Failsafe: if we are requesting the same LoopOnce animation (like hit reaction or attack),
+            // we must reset it and play it again so it doesn't stay clamped at the end.
+            if (next.loop === THREE.LoopOnce) {
+                next.reset().play();
+            }
+            return;
+        }
         if (this.currentAction) this.currentAction.fadeOut(0.15);
         next.reset().fadeIn(0.15).play();
         this.currentAction = next;
@@ -442,6 +450,7 @@ export class Character {
         this.health = Math.max(0, this.health - amount);
         this.isHit  = true;
         this.isAttacking = false;
+        this.attackTimer = 0; // Reset combat/recovery timer for hit state
 
         if (this.health <= 0) {
             this.isDead = true;
